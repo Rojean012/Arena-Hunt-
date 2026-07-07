@@ -88,6 +88,24 @@ window.addEventListener('mousemove', (e) => {
     mouse.y = e.clientY;
 });
 
+// --- AUDIO ---
+function playEnemyDeathSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 0.25);
+    } catch (_) { /* audio not supported */ }
+}
+
 // --- SPAWN LOGIC ---
 function viewportWorldX(x) { return x - canvas.width / 2 + camera.x; }
 function viewportWorldY(y) { return y - canvas.height / 2 + camera.y; }
@@ -171,7 +189,8 @@ function update() {
             if (distance < enemy.radius + bullet.radius) {
                 enemy.dead = true;
                 bullet.dead = true;
-                score += 10; // NEW: Increase score on hit
+                score += 10;
+                playEnemyDeathSound();
             }
         });
     });
