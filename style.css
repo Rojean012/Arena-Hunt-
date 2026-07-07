@@ -1,0 +1,11 @@
+/* Removes default browser margins */
+body { 
+    margin: 0; 
+    overflow: hidden; 
+    background-color: #222; 
+}
+
+/* Ensures the canvas behaves correctly */
+canvas { 
+    display: block; 
+}
