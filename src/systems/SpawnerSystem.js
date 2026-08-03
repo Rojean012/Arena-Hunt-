@@ -10,8 +10,8 @@ export class SpawnerSystem {
         this.coins = [];
 
         this.bounds = {
-            width: GameConfig.world.width,
-            height: GameConfig.world.height
+            width: GameConfig.world.width || 3000,
+            height: GameConfig.world.height || 3000
         };
 
         this.currentWave = 1;
@@ -24,7 +24,7 @@ export class SpawnerSystem {
 
         // Structured 5-Wave Milestone Spawn Progression Tables
         this.waveSpecs = {
-            1:  { types: ['slime'], maxEnemies: 4, spawnInterval: 180 }, // Slow & steady start (3s spawn interval)
+            1:  { types: ['slime'], maxEnemies: 4, spawnInterval: 180 },
             2:  { types: ['slime', 'snake'], maxEnemies: 6, spawnInterval: 150 },
             3:  { types: ['slime', 'snake'], maxEnemies: 8, spawnInterval: 130 },
             4:  { types: ['goblin', 'ghost'], maxEnemies: 10, spawnInterval: 110 },
@@ -64,7 +64,6 @@ export class SpawnerSystem {
     getWaveSpec(wave) {
         if (this.waveSpecs[wave]) return this.waveSpecs[wave];
 
-        // Wave 21+ Endless Scaling
         const types = ['slime', 'goblin', 'ghost', 'snake', 'bear', 'fox_demon', 'cultist_sorcerer', 'stone_golem', 'spider_fiend', 'frost_dragon'];
         return {
             types: types,
@@ -79,7 +78,6 @@ export class SpawnerSystem {
 
         const spec = this.getWaveSpec(this.currentWave);
 
-        // Check Wave Progression Transition
         if (this.waveTimer >= this.waveDuration && !spec.isBoss) {
             this.currentWave++;
             this.waveTimer = 0;
@@ -91,7 +89,6 @@ export class SpawnerSystem {
             }
         }
 
-        // Spawn Enemies Gradually Up to Max Enemies Limit
         this.spawnTimer++;
         if (this.spawnTimer >= spec.spawnInterval) {
             this.spawnTimer = 0;
@@ -102,7 +99,6 @@ export class SpawnerSystem {
             }
         }
 
-        // Filter Dead Entities
         this.enemies = this.enemies.filter(e => !e.dead);
         this.gems = this.gems.filter(g => !g.dead);
         this.coins = this.coins.filter(c => !c.dead);
@@ -115,9 +111,11 @@ export class SpawnerSystem {
         let sx = playerX + Math.cos(angle) * spawnDist;
         let sy = playerY + Math.sin(angle) * spawnDist;
 
-        // Clamp to World Bounds
-        sx = Math.max(50, Math.min(this.bounds.width - 50, sx));
-        sy = Math.max(50, Math.min(this.bounds.height - 50, sy));
+        const halfW = (this.bounds.width || 3000) / 2;
+        const halfH = (this.bounds.height || 3000) / 2;
+
+        sx = Math.max(-halfW + 50, Math.min(halfW - 50, sx));
+        sy = Math.max(-halfH + 50, Math.min(halfH - 50, sy));
 
         this.enemies.push(new Enemy(sx, sy, type));
     }

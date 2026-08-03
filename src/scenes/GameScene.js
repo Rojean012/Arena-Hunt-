@@ -63,7 +63,7 @@ export class GameScene {
     constructor(sceneManager) {
         this.sceneManager = sceneManager;
         
-        this.player = new Player(1500, 1500); // Start at world center (1500, 1500)
+        this.player = new Player(0, 0); // Player centered at world origin (0, 0)
         this.camera = new Camera();
         this.renderer = new Renderer();
         this.uiRenderer = new UIRenderer();
@@ -82,9 +82,9 @@ export class GameScene {
     }
 
     enter() {
-        this.player.reset(1500, 1500); // Reset player to center of 3000x3000 world
-        this.camera.x = 1500;
-        this.camera.y = 1500;
+        this.player.reset(0, 0); // Reset player to center (0, 0)
+        this.camera.x = 0;
+        this.camera.y = 0;
         this.spawner.reset();
         this.weaponManager.reset();
         this.levelManager.reset();

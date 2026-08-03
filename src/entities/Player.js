@@ -22,7 +22,6 @@ function loadHeroSprite(src) {
             const imgData = ctx.getImageData(0, 0, targetSize, targetSize);
             const data = imgData.data;
 
-            // Fast single-pass background keying
             const bgR = data[0];
             const bgG = data[1];
             const bgB = data[2];
@@ -50,11 +49,10 @@ function loadHeroSprite(src) {
     };
 }
 
-// Try loading wang_lin_v3.jpg first, with fallback to wang_lin_hero.jpg
 loadHeroSprite('/assets/images/wang_lin_v3.jpg');
 
 export class Player extends Entity {
-    constructor(x, y) {
+    constructor(x = 0, y = 0) {
         const pConfig = GameConfig.player || { radius: 22, speed: 3.4, health: 100 };
         super(x, y, pConfig.radius, '#3498db');
         
@@ -74,7 +72,7 @@ export class Player extends Entity {
         this.animTimer = 0;
     }
 
-    reset(x, y) {
+    reset(x = 0, y = 0) {
         this.x = x;
         this.y = y;
         this.health = this.maxHealth;
@@ -101,9 +99,12 @@ export class Player extends Entity {
             if (movement.x < 0) this.facingRight = false;
         }
 
+        // Clamp to Centered World Bounds (-1500 to +1500)
         if (bounds) {
-            this.x = Math.max(this.radius, Math.min(bounds.width - this.radius, this.x));
-            this.y = Math.max(this.radius, Math.min(bounds.height - this.radius, this.y));
+            const halfW = (bounds.width || 3000) / 2;
+            const halfH = (bounds.height || 3000) / 2;
+            this.x = Math.max(-halfW + this.radius, Math.min(halfW - this.radius, this.x));
+            this.y = Math.max(-halfH + this.radius, Math.min(halfH - this.radius, this.y));
         }
     }
 
@@ -111,8 +112,8 @@ export class Player extends Entity {
         if (this.invulnerableTimer > 0) return false;
 
         this.health -= amount;
-        this.invulnerableTimer = 25; // 25 frames invulnerability
-        this.hitFlash = 12; // 12 frames full-sprite red hit flash!
+        this.invulnerableTimer = 25;
+        this.hitFlash = 12;
 
         if (soundManager && soundManager.playHit) {
             soundManager.playHit();
@@ -120,7 +121,7 @@ export class Player extends Entity {
 
         if (this.health <= 0) {
             this.health = 0;
-            return true; // Player died
+            return true;
         }
         return false;
     }
@@ -129,7 +130,7 @@ export class Player extends Entity {
         this.xp += amount;
         if (this.xp >= this.xpToNextLevel) {
             this.levelUp();
-            return true; // Level up triggered
+            return true;
         }
         return false;
     }
@@ -140,7 +141,6 @@ export class Player extends Entity {
         const multiplier = (GameConfig.xp && GameConfig.xp.multiplier) ? GameConfig.xp.multiplier : 1.25;
         this.xpToNextLevel = Math.floor(this.xpToNextLevel * multiplier);
         
-        // Partial heal on level up
         this.health = Math.min(this.maxHealth, this.health + 25);
 
         if (soundManager && soundManager.playLevelUp) {
@@ -165,7 +165,6 @@ export class Player extends Entity {
             ctx.scale(-1, 1);
         }
 
-        // Floating Breathing Animation
         const bobY = Math.sin(this.animTimer) * 2;
         ctx.translate(0, bobY);
 
@@ -173,7 +172,6 @@ export class Player extends Entity {
         if (heroCanvas && (heroCanvas.complete || heroCanvas.width)) {
             ctx.drawImage(heroCanvas, -r * 1.5, -r * 1.5, r * 3.0, r * 3.0);
 
-            // Full-Sprite Red Hit Flash Tint when taking damage!
             if (this.hitFlash > 0) {
                 ctx.save();
                 ctx.globalCompositeOperation = 'source-atop';
@@ -182,11 +180,15 @@ export class Player extends Entity {
                 ctx.restore();
             }
         } else {
-            // Fallback
-            ctx.fillStyle = this.hitFlash > 0 ? '#ef4444' : this.color;
+            // High-visibility cyan hero avatar fallback
+            ctx.fillStyle = this.hitFlash > 0 ? '#ef4444' : '#38bdf8';
             ctx.beginPath();
             ctx.arc(0, 0, r, 0, Math.PI * 2);
             ctx.fill();
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
         }
 
         ctx.restore();
