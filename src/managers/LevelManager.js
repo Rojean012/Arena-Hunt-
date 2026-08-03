@@ -5,7 +5,7 @@ export class LevelManager {
     constructor() {
         this.totalGems = 0;
         this.currentTierIndex = 0;
-        this.targetGems = GameConfig.upgradeThresholds[0];
+        this.targetGems = GameConfig.upgradeThresholds ? GameConfig.upgradeThresholds[0] : 10;
         this.isLevelingUp = false;
         this.justOpened = false;
         this.cardOptions = [];
@@ -18,25 +18,33 @@ export class LevelManager {
     reset() {
         this.totalGems = 0;
         this.currentTierIndex = 0;
-        this.targetGems = GameConfig.upgradeThresholds[0];
+        this.targetGems = GameConfig.upgradeThresholds ? GameConfig.upgradeThresholds[0] : 10;
         this.isLevelingUp = false;
         this.justOpened = false;
         this.cardOptions = [];
     }
 
+    triggerLevelUp(player, weaponManager) {
+        this.generateCardOptions(weaponManager);
+        this.isLevelingUp = true;
+        this.justOpened = true;
+        if (soundManager && soundManager.playLevelUp) {
+            soundManager.playLevelUp();
+        }
+    }
+
     addXP(amount, weaponManager) {
         this.totalGems += amount;
 
+        const thresholds = GameConfig.upgradeThresholds || [5, 12, 22, 35, 50, 70, 95, 125, 160, 200];
         if (this.totalGems >= this.targetGems) {
             this.currentTierIndex++;
-            this.targetGems = GameConfig.upgradeThresholds[this.currentTierIndex] || (this.targetGems + 40);
+            this.targetGems = thresholds[this.currentTierIndex] || (this.targetGems + 40);
             
             if (soundManager && soundManager.playCoinCollect) {
                 soundManager.playCoinCollect();
             }
-            this.generateCardOptions(weaponManager);
-            this.isLevelingUp = true;
-            this.justOpened = true; // Gate input on open frame
+            this.triggerLevelUp(null, weaponManager);
             return true;
         }
         return false;
@@ -46,34 +54,34 @@ export class LevelManager {
         const pool = [];
 
         // 1. Weapon Options (Cap up to LEVEL 10!)
-        Object.keys(GameConfig.weapons).forEach(id => {
-            const wConfig = GameConfig.weapons[id];
-            const currentLvl = weaponManager.getWeaponLevel(id);
+        if (weaponManager && GameConfig.weapons) {
+            Object.keys(GameConfig.weapons).forEach(id => {
+                const wConfig = GameConfig.weapons[id];
+                const currentLvl = weaponManager.getWeaponLevel(id);
 
-            if (currentLvl === 0) {
-                // New weapon unlock
-                pool.push({
-                    type: 'NEW',
-                    id: id,
-                    icon: wConfig.icon,
-                    name: `UNLOCK: ${wConfig.name}`,
-                    description: wConfig.description || 'New magic weapon skill.',
-                    level: 1,
-                    rarity: 'RARE'
-                });
-            } else if (currentLvl < 10) {
-                // Upgrade weapon up to Level 10!
-                pool.push({
-                    type: 'UPGRADE',
-                    id: id,
-                    icon: wConfig.icon,
-                    name: `${wConfig.name}`,
-                    description: `Increase damage, speed & count (LVL ${currentLvl + 1}).`,
-                    level: currentLvl + 1,
-                    rarity: 'COMMON'
-                });
-            }
-        });
+                if (currentLvl === 0) {
+                    pool.push({
+                        type: 'NEW',
+                        id: id,
+                        icon: wConfig.icon,
+                        name: `UNLOCK: ${wConfig.name}`,
+                        description: wConfig.description || 'New magic weapon skill.',
+                        level: 1,
+                        rarity: 'RARE'
+                    });
+                } else if (currentLvl < 10) {
+                    pool.push({
+                        type: 'UPGRADE',
+                        id: id,
+                        icon: wConfig.icon,
+                        name: `${wConfig.name}`,
+                        description: `Increase damage, speed & count (LVL ${currentLvl + 1}).`,
+                        level: currentLvl + 1,
+                        rarity: 'COMMON'
+                    });
+                }
+            });
+        }
 
         // 2. Stat Options
         pool.push({
@@ -106,7 +114,6 @@ export class LevelManager {
             rarity: 'RARE'
         });
 
-        // Pick 3 unique cards
         const shuffled = [...pool].sort(() => Math.random() - 0.5);
         this.cardOptions = shuffled.slice(0, 3);
     }
@@ -126,16 +133,17 @@ export class LevelManager {
             return;
         }
 
-        if (card.type === 'NEW' || card.type === 'UPGRADE') {
+        if ((card.type === 'NEW' || card.type === 'UPGRADE') && weaponManager) {
             weaponManager.addWeapon(card.id);
-        } else if (card.type === 'STAT') {
+        } else if (card.type === 'STAT' && player) {
             if (card.id === 'stat_speed') {
                 player.speed += 0.5;
             } else if (card.id === 'stat_magnet') {
                 player.magnetRadius += 50;
             } else if (card.id === 'stat_health') {
                 player.maxHealth += 25;
-                player.heal(50);
+                if (player.heal) player.heal(50);
+                else player.health = Math.min(player.maxHealth, player.health + 50);
             }
         }
 
