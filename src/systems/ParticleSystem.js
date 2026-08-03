@@ -120,6 +120,19 @@ export class ParticleSystem {
         this.particles.push(new Particle(x, y, vx, vy, '#00ffff', 2.5, 14));
     }
 
+    spawnThunderSparks(x, y) {
+        for (let i = 0; i < 10; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 2 + Math.random() * 5;
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            const size = 2 + Math.random() * 3;
+            const life = 10 + Math.floor(Math.random() * 10);
+            const color = Math.random() < 0.5 ? '#fef08a' : '#ffffff';
+            this.particles.push(new Particle(x, y, vx, vy, color, size, life));
+        }
+    }
+
     update() {
         this.particles.forEach(p => p.update());
         this.particles = this.particles.filter(p => !p.dead);
