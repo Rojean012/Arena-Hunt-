@@ -21,18 +21,18 @@ export class UIRenderer {
         ctx.fillStyle = hpPct > 0.5 ? '#2ecc71' : hpPct > 0.25 ? '#f39c12' : '#e74c3c';
         ctx.fillRect(hpX + 2, hpY + 2, (hpW - 4) * hpPct, hpH - 4);
 
-        ctx.strokeStyle = '#555';
+        ctx.strokeStyle = '#334155';
         ctx.lineWidth = 1.5;
         ctx.strokeRect(hpX, hpY, hpW, hpH);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 12px Arial';
+        ctx.font = '700 12px "Outfit", sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(`HP: ${Math.ceil(player.health)} / ${player.maxHealth}`, hpX + hpW / 2, hpY + 16);
 
-        // 2. Score, Emerald Gems Counter Below Score, and Coins
+        // 2. Score, Emerald Gems Counter Below Score, and Coins (Outfit Font)
         ctx.textAlign = 'left';
-        ctx.font = 'bold 22px Arial';
+        ctx.font = '900 22px "Outfit", sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.fillText(`Score: ${score}`, 20, 68);
 
@@ -40,28 +40,28 @@ export class UIRenderer {
         const targetGems = levelManager.targetGems;
         const currentGems = levelManager.totalGems;
 
-        ctx.font = 'bold 18px Arial';
+        ctx.font = '700 18px "Outfit", sans-serif';
         ctx.fillStyle = '#2ecc71';
         ctx.fillText(`💎 Emeralds: ${currentGems} / ${targetGems}`, 20, 94);
 
-        ctx.font = 'bold 18px Arial';
+        ctx.font = '700 18px "Outfit", sans-serif';
         ctx.fillStyle = '#f1c40f';
         ctx.fillText(`Coins: $${coins}`, 20, 118);
 
         // 3. Active Weapon Icons Bar (Top Right)
         ctx.textAlign = 'right';
-        ctx.font = 'bold 16px Arial';
-        ctx.fillStyle = '#e74c3c';
+        ctx.font = '700 16px "Outfit", sans-serif';
+        ctx.fillStyle = '#ef4444';
         ctx.fillText(`WAVE TIER ${waveTier}`, canvasWidth - 20, 35);
 
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '14px Arial';
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '500 14px "Outfit", sans-serif';
         ctx.fillText('WEAPONS:', canvasWidth - 220, 60);
 
         let slotX = canvasWidth - 210;
         Object.keys(weaponManager.weapons).forEach(id => {
             const w = weaponManager.weapons[id];
-            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
             ctx.fillRect(slotX, 68, 32, 32);
             ctx.strokeStyle = '#f1c40f';
             ctx.lineWidth = 1;
@@ -74,7 +74,7 @@ export class UIRenderer {
             slotX += 38;
         });
 
-        // 4. PROMINENT PROPORTIONAL WAVE SIGNALING BANNER V3
+        // 4. PROMINENT WAVE SIGNALING BANNER V3 (Cinzel Font)
         if (spawner && spawner.waveNoticeTimer > 0) {
             const bannerW = 680;
             const bannerH = 110;
@@ -100,10 +100,10 @@ export class UIRenderer {
             ctx.lineWidth = 3;
             ctx.strokeRect(bannerX, bannerY, bannerW, bannerH);
 
-            // Banner Text Overlay
+            // Banner Text Overlay (Cinzel Font)
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 24px Arial';
+            ctx.font = '900 24px "Cinzel", "Outfit", serif';
             ctx.fillText(spawner.waveNoticeText, canvasWidth / 2, bannerY + 62);
 
             ctx.restore();
