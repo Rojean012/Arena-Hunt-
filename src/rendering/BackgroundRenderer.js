@@ -8,10 +8,13 @@ export class BackgroundRenderer {
     render(ctx, camera, canvasWidth, canvasHeight) {
         ctx.save();
 
-        const startTileX = Math.floor((camera.x - canvasWidth / 2) / this.tileSize);
-        const endTileX = Math.ceil((camera.x + canvasWidth / 2) / this.tileSize);
-        const startTileY = Math.floor((camera.y - canvasHeight / 2) / this.tileSize);
-        const endTileY = Math.ceil((camera.y + canvasHeight / 2) / this.tileSize);
+        const cw = (canvasWidth && Number.isFinite(canvasWidth) && canvasWidth > 0) ? canvasWidth : (window.innerWidth || 1920);
+        const ch = (canvasHeight && Number.isFinite(canvasHeight) && canvasHeight > 0) ? canvasHeight : (window.innerHeight || 1080);
+
+        const startTileX = Math.floor((camera.x - cw / 2) / this.tileSize);
+        const endTileX = Math.ceil((camera.x + cw / 2) / this.tileSize);
+        const startTileY = Math.floor((camera.y - ch / 2) / this.tileSize);
+        const endTileY = Math.ceil((camera.y + ch / 2) / this.tileSize);
 
         // 1. Earthy Grass & Stone Ground Base
         for (let tx = startTileX; tx <= endTileX; tx++) {
@@ -19,8 +22,8 @@ export class BackgroundRenderer {
                 const worldX = tx * this.tileSize;
                 const worldY = ty * this.tileSize;
 
-                const screenX = camera.getScreenX(worldX, canvasWidth);
-                const screenY = camera.getScreenY(worldY, canvasHeight);
+                const screenX = camera.getScreenX(worldX, cw);
+                const screenY = camera.getScreenY(worldY, ch);
 
                 const seed = Math.sin(tx * 12.9898 + ty * 78.233) * 43758.5453;
                 const normSeed = seed - Math.floor(seed);
@@ -97,8 +100,8 @@ export class BackgroundRenderer {
         }
 
         // 2. Central Qi Emblem Ring (World Origin 0,0)
-        const centerScreenX = camera.getScreenX(0, canvasWidth);
-        const centerScreenY = camera.getScreenY(0, canvasHeight);
+        const centerScreenX = camera.getScreenX(0, cw);
+        const centerScreenY = camera.getScreenY(0, ch);
 
         ctx.save();
         ctx.strokeStyle = 'rgba(234, 179, 8, 0.35)';
@@ -114,16 +117,19 @@ export class BackgroundRenderer {
         ctx.stroke();
         ctx.restore();
 
-        // 3. Subtle Edge Vignette Shadow
+        // 3. Bulletproof Vignette Gradient (Guaranteed finite positive dimensions!)
+        const r0 = Math.max(1, ch * 0.45);
+        const r1 = Math.max(r0 + 10, ch * 0.95);
+
         const vignette = ctx.createRadialGradient(
-            canvasWidth / 2, canvasHeight / 2, canvasHeight * 0.45,
-            canvasWidth / 2, canvasHeight / 2, canvasHeight * 0.95
+            cw / 2, ch / 2, r0,
+            cw / 2, ch / 2, r1
         );
         vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
         vignette.addColorStop(1, 'rgba(0, 0, 0, 0.55)');
 
         ctx.fillStyle = vignette;
-        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        ctx.fillRect(0, 0, cw, ch);
 
         ctx.restore();
     }

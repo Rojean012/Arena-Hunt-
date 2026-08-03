@@ -35,41 +35,48 @@ export class Renderer {
     }
 
     render(ctx, camera, player, enemies, gems, coins, weaponManager, particles, width, height) {
-        this.backgroundRenderer.render(ctx, camera, width, height);
+        const w = (width && Number.isFinite(width) && width > 0) ? width : (this.width || window.innerWidth || 1920);
+        const h = (height && Number.isFinite(height) && height > 0) ? height : (this.height || window.innerHeight || 1080);
+
+        this.backgroundRenderer.render(ctx, camera, w, h);
 
         gems.forEach(g => {
-            const sx = camera.getScreenX(g.x, width);
-            const sy = camera.getScreenY(g.y, height);
+            const sx = camera.getScreenX(g.x, w);
+            const sy = camera.getScreenY(g.y, h);
             g.render(ctx, sx, sy);
         });
 
         coins.forEach(c => {
-            const sx = camera.getScreenX(c.x, width);
-            const sy = camera.getScreenY(c.y, height);
+            const sx = camera.getScreenX(c.x, w);
+            const sy = camera.getScreenY(c.y, h);
             c.render(ctx, sx, sy);
         });
 
-        player.render(ctx, camera.getScreenX(player.x, width), camera.getScreenY(player.y, height));
+        player.render(ctx, camera.getScreenX(player.x, w), camera.getScreenY(player.y, h));
 
         enemies.forEach(e => {
-            const sx = camera.getScreenX(e.x, width);
-            const sy = camera.getScreenY(e.y, height);
+            const sx = camera.getScreenX(e.x, w);
+            const sy = camera.getScreenY(e.y, h);
             e.render(ctx, sx, sy);
         });
 
-        weaponManager.render(ctx, camera, player, width, height);
-        particles.render(ctx, camera, width, height);
+        weaponManager.render(ctx, camera, player, w, h);
+        particles.render(ctx, camera, w, h);
     }
 
     drawBackground(camera) {
+        const w = this.width || window.innerWidth || 1920;
+        const h = this.height || window.innerHeight || 1080;
         if (this.ctx) {
-            this.backgroundRenderer.render(this.ctx, camera, this.width, this.height);
+            this.backgroundRenderer.render(this.ctx, camera, w, h);
         }
     }
 
     drawHUD(player, score, coins, highScore, waveTier, levelManager, weaponManager, spawner) {
+        const w = this.width || window.innerWidth || 1920;
+        const h = this.height || window.innerHeight || 1080;
         if (this.ctx) {
-            this.uiRenderer.renderHUD(this.ctx, player, score, coins, highScore, waveTier, levelManager, weaponManager, spawner, this.width, this.height);
+            this.uiRenderer.renderHUD(this.ctx, player, score, coins, highScore, waveTier, levelManager, weaponManager, spawner, w, h);
         }
     }
 }
