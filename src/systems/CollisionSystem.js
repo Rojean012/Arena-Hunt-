@@ -25,18 +25,44 @@ export class CollisionSystem {
             }
         });
 
-        // 2. Enemy Ranged Projectiles vs Player
+        // 2. Enemy Ranged Projectiles & Special Attacks vs Player
         enemyProjectiles.forEach((p) => {
             if (p.dead) return;
-            if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + p.radius) {
-                p.dead = true;
-                player.takeDamage(p.damage);
-                camera.shake(8, 10);
-                this.particleSystem.spawnBlood(player.x, player.y, 6);
+            const dist = Math.hypot(player.x - p.x, player.y - p.y);
+
+            if (p.type === 'bloodPillar') {
+                if (p.erupted && dist < player.radius + p.radius * 1.2) {
+                    if (player.takeDamage(p.damage * 0.2)) {
+                        camera.shake(12, 14);
+                        this.particleSystem.spawnBlood(player.x, player.y, 10);
+                    }
+                }
+            } else if (p.type === 'golemSlam') {
+                if (Math.abs(dist - p.currentRadius) < player.radius + 12) {
+                    if (player.takeDamage(p.damage)) {
+                        camera.shake(14, 16);
+                        const angle = Math.atan2(player.y - p.y, player.x - p.x);
+                        player.x += Math.cos(angle) * 40;
+                        player.y += Math.sin(angle) * 40;
+                    }
+                }
+            } else if (p.type === 'spiderWeb') {
+                if (dist < player.radius + p.radius) {
+                    p.dead = true;
+                    player.takeDamage(p.damage);
+                    camera.shake(6, 8);
+                }
+            } else {
+                if (dist < player.radius + p.radius) {
+                    p.dead = true;
+                    player.takeDamage(p.damage);
+                    camera.shake(8, 10);
+                    this.particleSystem.spawnBlood(player.x, player.y, 6);
+                }
             }
         });
 
-        // 3. Gems vs Player (Score & XP are ONLY awarded HERE on pickup!)
+        // 3. Gems vs Player
         gems.forEach((gem) => {
             if (gem.dead) return;
             if (player.isCollidingWith(gem)) {

@@ -37,7 +37,6 @@ export class GameScene {
     }
 
     enter(data = {}) {
-        // If resuming active game session, preserve player, enemies, score & weapons!
         if (data && data.isResume) {
             return;
         }
@@ -70,7 +69,7 @@ export class GameScene {
             this.pendingEnemies.push(new Enemy(enemy.x + 12, enemy.y + 12, 'miniSlime'));
         }
 
-        if (enemy.type === 'bear') {
+        if (enemy.type === 'bear' || enemy.type === 'frost_dragon' || enemy.type === 'stone_golem') {
             for (let i = 0; i < 5; i++) {
                 const offsetX = (Math.random() - 0.5) * 40;
                 const offsetY = (Math.random() - 0.5) * 40;
@@ -96,48 +95,74 @@ export class GameScene {
             return;
         }
 
-        // If Leveling up modal is active, pass exact renderer dimensions to update()
         if (this.levelManager.isLevelingUp) {
             this.upgradeModal.update(this.levelManager, this.weaponManager, this.player, engine.renderer.width, engine.renderer.height);
             return;
         }
 
-        // 1. Mouse world calculation
         const mouseWorld = {
             x: this.camera.getWorldX(input.mouse.x, engine.renderer.width),
             y: this.camera.getWorldY(input.mouse.y, engine.renderer.height)
         };
 
-        // 2. Player Update
         const movement = input.getMovementVector();
         this.player.update(movement, mouseWorld);
 
-        // 3. Camera Follow
         this.camera.setTarget(this.player.x, this.player.y);
         this.camera.update();
 
-        // 4. Update Auto-Attacking Weapons
         this.weaponManager.update(this.player, this.enemies, this.particles, (enemy) => this.handleEnemyDefeat(enemy));
 
-        // 5. Update Entities & Enemy Projectiles
         this.enemies.forEach(e => e.update(this.player.x, this.player.y, this.enemyProjectiles));
         this.gems.forEach(g => g.update(this.player.x, this.player.y, this.player.magnetRadius));
         this.coins.forEach(c => c.update(this.player.x, this.player.y));
         this.particles.update();
 
-        // Update enemy projectiles (Archer arrows)
+        // Update Advanced Enemy Special Attacks
         this.enemyProjectiles.forEach(p => {
-            p.x += p.vx;
-            p.y += p.vy;
-            if (Math.hypot(p.x - this.player.x, p.y - this.player.y) > 800) {
+            if (p.type === 'foxfire') {
+                // Homing curve towards player
+                const angle = Math.atan2(this.player.y - p.y, this.player.x - p.x);
+                p.vx += Math.cos(angle) * 0.25;
+                p.vy += Math.sin(angle) * 0.25;
+                const speed = Math.hypot(p.vx, p.vy);
+                if (speed > 5) {
+                    p.vx = (p.vx / speed) * 5;
+                    p.vy = (p.vy / speed) * 5;
+                }
+                p.x += p.vx;
+                p.y += p.vy;
+                if (Math.random() < 0.4) {
+                    this.particles.spawnFlameEmbers(p.x, p.y);
+                }
+            } else if (p.type === 'bloodPillar') {
+                p.timer--;
+                if (p.timer <= 0 && !p.erupted) {
+                    p.erupted = true;
+                    p.eruptLife = 20; // 20 frame active blood blast
+                    this.particles.spawnBlood(p.x, p.y, 25);
+                }
+                if (p.erupted) {
+                    p.eruptLife--;
+                    if (p.eruptLife <= 0) p.dead = true;
+                }
+            } else if (p.type === 'golemSlam') {
+                p.currentRadius += 4;
+                if (p.currentRadius >= p.maxRadius) {
+                    p.dead = true;
+                }
+            } else {
+                p.x += p.vx;
+                p.y += p.vy;
+            }
+
+            if (Math.hypot(p.x - this.player.x, p.y - this.player.y) > 900) {
                 p.dead = true;
             }
         });
 
-        // 6. Spawning
         this.spawner.update(this.player, this.enemies, this.camera, engine.renderer.width, engine.renderer.height);
 
-        // 7. Collisions
         this.collisions.checkCollisions(
             this.player,
             this.enemies,
@@ -152,7 +177,6 @@ export class GameScene {
             this.camera
         );
 
-        // 8. Safe Cleanup & Flush Pending Split Enemies
         this.enemies = this.enemies.filter(e => !e.dead);
         if (this.pendingEnemies.length > 0) {
             this.enemies.push(...this.pendingEnemies);
@@ -163,7 +187,6 @@ export class GameScene {
         this.coins = this.coins.filter(c => !c.dead);
         this.enemyProjectiles = this.enemyProjectiles.filter(p => !p.dead);
 
-        // 9. Check Game Over
         if (this.player.dead) {
             storageSystem.addCoins(this.sessionCoins);
             const isNewHigh = storageSystem.setHighScore(this.score);
@@ -176,58 +199,115 @@ export class GameScene {
         const w = renderer.width;
         const h = renderer.height;
 
-        // Draw World Background
         renderer.drawBackground(this.camera);
 
-        // Draw Gems
         this.gems.forEach(gem => {
             const sx = this.camera.getScreenX(gem.x, w);
             const sy = this.camera.getScreenY(gem.y, h);
             gem.render(ctx, sx, sy);
         });
 
-        // Draw Coins
         this.coins.forEach(coin => {
             const sx = this.camera.getScreenX(coin.x, w);
             const sy = this.camera.getScreenY(coin.y, h);
             coin.render(ctx, sx, sy);
         });
 
-        // Draw Enemy Projectiles
+        // Draw Advanced Enemy Special Attack Visuals
         this.enemyProjectiles.forEach(p => {
             const sx = this.camera.getScreenX(p.x, w);
             const sy = this.camera.getScreenY(p.y, h);
             ctx.save();
-            ctx.beginPath();
-            ctx.arc(sx, sy, p.radius, 0, Math.PI * 2);
-            ctx.fillStyle = p.color;
-            ctx.fill();
+
+            if (p.type === 'bloodPillar') {
+                if (!p.erupted) {
+                    // Pulsing Telegraph Circle
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([6, 6]);
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, p.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+                    ctx.fill();
+                } else {
+                    // Towering Blood Eruption Pillar
+                    ctx.fillStyle = '#b91c1c';
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, p.radius * 1.2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#f87171';
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, p.radius * 0.6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (p.type === 'golemSlam') {
+                // Expanding Ground Shockwave Ring
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(sx, sy, p.currentRadius, 0, Math.PI * 2);
+                ctx.stroke();
+            } else if (p.type === 'spiderWeb') {
+                // Sticky Jade Web Mesh
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(sx, sy, p.radius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.moveTo(sx - p.radius, sy); ctx.lineTo(sx + p.radius, sy);
+                ctx.moveTo(sx, sy - p.radius); ctx.lineTo(sx, sy + p.radius);
+                ctx.stroke();
+            } else if (p.type === 'frostBreath') {
+                // Glacial Ice Crystal
+                ctx.fillStyle = '#38bdf8';
+                ctx.beginPath();
+                ctx.arc(sx, sy, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(sx - 2, sy - 2, p.radius * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (p.type === 'foxfire') {
+                // Glowing Crimson Foxfire Orb
+                ctx.shadowColor = '#ef4444';
+                ctx.shadowBlur = 10;
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.arc(sx, sy, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(sx - 2, sy - 2, p.radius * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.beginPath();
+                ctx.arc(sx, sy, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color || '#e67e22';
+                ctx.fill();
+            }
+
             ctx.restore();
         });
 
-        // Draw Enemies
         this.enemies.forEach(enemy => {
             const sx = this.camera.getScreenX(enemy.x, w);
             const sy = this.camera.getScreenY(enemy.y, h);
             enemy.render(ctx, sx, sy);
         });
 
-        // Draw Player (Wang Lin Xianxia MC Hero)
         if (this.player && !this.player.dead) {
             const px = this.camera.getScreenX(this.player.x, w);
             const py = this.camera.getScreenY(this.player.y, h);
             this.player.render(ctx, px, py);
         }
 
-        // Draw Weapon Visual Effects
         if (this.player) {
             this.weaponManager.render(ctx, this.camera, this.player, w, h);
         }
 
-        // Draw Particles
         this.particles.render(ctx, this.camera, w, h);
 
-        // Draw HUD Overlay
         if (this.player) {
             renderer.drawHUD(
                 this.player,
@@ -241,7 +321,6 @@ export class GameScene {
             );
         }
 
-        // Draw 3-Card Upgrade Modal on Level Up
         if (this.levelManager.isLevelingUp) {
             this.upgradeModal.render(ctx, this.levelManager, w, h);
         }

@@ -64,7 +64,52 @@ export const GameConfig = {
             health: 90,
             damage: 25,
             color: '#e74c3c',
-            name: 'Mutant Boss',
+            name: 'Mutant Orc Berserker',
+            gemType: 'boss_emerald'
+        },
+        fox_demon: {
+            radius: 22,
+            speed: 2.1,
+            health: 45,
+            damage: 16,
+            color: '#ef4444',
+            name: 'Nine-Tailed Demon Fox',
+            gemType: 'large_emerald'
+        },
+        cultist_sorcerer: {
+            radius: 22,
+            speed: 1.1,
+            health: 55,
+            damage: 20,
+            color: '#b91c1c',
+            name: 'Blood Cultist Sorcerer',
+            gemType: 'large_emerald'
+        },
+        stone_golem: {
+            radius: 32,
+            speed: 0.7,
+            health: 180,
+            damage: 30,
+            color: '#64748b',
+            name: 'Ironclad Stone Golem',
+            gemType: 'boss_emerald'
+        },
+        spider_fiend: {
+            radius: 16,
+            speed: 1.9,
+            health: 22,
+            damage: 11,
+            color: '#10b981',
+            name: 'Jade Spider Fiend',
+            gemType: 'emerald'
+        },
+        frost_dragon: {
+            radius: 40,
+            speed: 0.85,
+            health: 320,
+            damage: 40,
+            color: '#38bdf8',
+            name: 'Celestial Frost Dragon',
             gemType: 'boss_emerald'
         }
     },

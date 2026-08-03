@@ -28,7 +28,7 @@ export class SpawnerSystem {
         // Increase difficulty & trigger prominent wave signaling every 18 seconds (1080 frames)
         if (this.waveTimer % 1080 === 0) {
             this.difficultyTier++;
-            this.enemySpawnInterval = Math.max(10, 50 - this.difficultyTier * 5);
+            this.enemySpawnInterval = Math.max(8, 50 - this.difficultyTier * 4);
             
             // Trigger prominent wave notice
             this.waveNoticeText = `⚠️ WAVE ${this.difficultyTier}: MONSTER SWARM APPROACHING! ⚠️`;
@@ -62,15 +62,20 @@ export class SpawnerSystem {
 
         let type = 'slime';
         const rand = Math.random();
-        
-        if (this.difficultyTier >= 4 && rand < 0.15) {
-            type = 'bear';
-        } else if (this.difficultyTier >= 3 && rand < 0.35) {
-            type = 'ghost';
-        } else if (this.difficultyTier >= 2 && rand < 0.65) {
-            type = rand < 0.35 ? 'snake' : 'goblin';
-        } else if (rand < 0.30) {
-            type = 'snake'; // Viper Serpents can spawn from Wave 1!
+        const tier = this.difficultyTier;
+
+        if (tier >= 6 && rand < 0.12) {
+            type = 'frost_dragon'; // Celestial Frost Dragon Boss
+        } else if (tier >= 5 && rand < 0.18) {
+            type = 'stone_golem'; // Ironclad Stone Golem
+        } else if (tier >= 4 && rand < 0.35) {
+            type = rand < 0.5 ? 'cultist_sorcerer' : 'fox_demon';
+        } else if (tier >= 3 && rand < 0.50) {
+            type = rand < 0.5 ? 'ghost' : 'bear';
+        } else if (tier >= 2 && rand < 0.65) {
+            type = rand < 0.5 ? 'spider_fiend' : 'goblin';
+        } else {
+            type = rand < 0.4 ? 'snake' : 'slime';
         }
 
         enemies.push(new Enemy(x, y, type));
