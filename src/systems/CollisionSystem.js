@@ -5,61 +5,56 @@ export class CollisionSystem {
         this.particleSystem = particleSystem;
     }
 
-    checkCollisions(player, enemies, gems, coins, enemyProjectiles, levelManager, weaponManager, onEnemyDefeat, onScoreAdd, onCoinAdd, camera) {
+    update(player, enemies, gems, coins, enemyProjectiles, particles, onXPCollected, onCoinCollected, onPlayerDeath) {
+        if (!player) return;
+
         // 1. Enemies vs Player
         enemies.forEach((enemy) => {
             if (enemy.dead) return;
 
             if (player.isCollidingWith(enemy)) {
-                const damaged = player.takeDamage(enemy.damage);
-                if (damaged) {
-                    camera.shake(10, 12);
-                    this.particleSystem.spawnBlood(player.x, player.y, 8);
-                    
-                    const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-                    enemy.x -= Math.cos(angle) * 35;
-                    enemy.y -= Math.sin(angle) * 35;
-                }
-            }
+                const isDead = player.takeDamage(enemy.damage);
+                if (particles) particles.spawnBlood(player.x, player.y, 6);
+                
+                // Knockback
+                const angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
+                enemy.x -= Math.cos(angle) * 20;
+                enemy.y -= Math.sin(angle) * 20;
 
-            if (enemy.health <= 0 && !enemy.dead) {
-                if (onEnemyDefeat) onEnemyDefeat(enemy);
+                if (isDead && onPlayerDeath) {
+                    onPlayerDeath();
+                }
             }
         });
 
-        // 2. Enemy Ranged Projectiles & Special Attacks vs Player
+        // 2. Ranged Enemy Projectiles & Special Attacks vs Player
         enemyProjectiles.forEach((p) => {
             if (p.dead) return;
             const dist = Math.hypot(player.x - p.x, player.y - p.y);
 
             if (p.type === 'bloodPillar') {
-                if (p.erupted && dist < player.radius + p.radius * 1.2) {
-                    if (player.takeDamage(p.damage * 0.2)) {
-                        camera.shake(12, 14);
-                        this.particleSystem.spawnBlood(player.x, player.y, 10);
-                    }
+                if (p.timer === 20 && dist < player.radius + (p.radius || 35) * 1.2) {
+                    const isDead = player.takeDamage(p.damage);
+                    if (particles) particles.spawnBlood(player.x, player.y, 10);
+                    if (isDead && onPlayerDeath) onPlayerDeath();
                 }
             } else if (p.type === 'golemSlam') {
                 if (Math.abs(dist - p.currentRadius) < player.radius + 12) {
-                    if (player.takeDamage(p.damage)) {
-                        camera.shake(14, 16);
-                        const angle = Math.atan2(player.y - p.y, player.x - p.x);
-                        player.x += Math.cos(angle) * 40;
-                        player.y += Math.sin(angle) * 40;
-                    }
-                }
-            } else if (p.type === 'spiderWeb') {
-                if (dist < player.radius + p.radius) {
-                    p.dead = true;
-                    player.takeDamage(p.damage);
-                    camera.shake(6, 8);
+                    const isDead = player.takeDamage(p.damage);
+                    if (particles) particles.spawnBlood(player.x, player.y, 8);
+                    
+                    const angle = Math.atan2(player.y - p.y, player.x - p.x);
+                    player.x += Math.cos(angle) * 35;
+                    player.y += Math.sin(angle) * 35;
+
+                    if (isDead && onPlayerDeath) onPlayerDeath();
                 }
             } else {
-                if (dist < player.radius + p.radius) {
+                if (dist < player.radius + (p.radius || 6)) {
                     p.dead = true;
-                    player.takeDamage(p.damage);
-                    camera.shake(8, 10);
-                    this.particleSystem.spawnBlood(player.x, player.y, 6);
+                    const isDead = player.takeDamage(p.damage || 8);
+                    if (particles) particles.spawnBlood(player.x, player.y, 6);
+                    if (isDead && onPlayerDeath) onPlayerDeath();
                 }
             }
         });
@@ -69,10 +64,8 @@ export class CollisionSystem {
             if (gem.dead) return;
             if (player.isCollidingWith(gem)) {
                 gem.dead = true;
-                this.particleSystem.spawnCoinSparkle(gem.x, gem.y);
-                
-                if (onScoreAdd) onScoreAdd(gem.value * 15);
-                levelManager.addXP(gem.value, weaponManager);
+                if (particles) particles.spawnCoinSparkle(gem.x, gem.y);
+                if (onXPCollected) onXPCollected(gem.value * 10);
             }
         });
 
@@ -80,11 +73,25 @@ export class CollisionSystem {
         coins.forEach((coin) => {
             if (coin.dead) return;
             if (player.isCollidingWith(coin)) {
-                coin.collect();
-                onCoinAdd(coin.value);
-                this.particleSystem.spawnCoinSparkle(coin.x, coin.y);
-                soundManager.playCoinClink();
+                coin.dead = true;
+                if (onCoinCollected) onCoinCollected(coin.value || 1);
+                if (particles) particles.spawnCoinSparkle(coin.x, coin.y);
+                if (soundManager && soundManager.playCoinClink) soundManager.playCoinClink();
             }
         });
+    }
+
+    checkCollisions(player, enemies, gems, coins, enemyProjectiles, levelManager, weaponManager, onEnemyDefeat, onScoreAdd, onCoinAdd, camera) {
+        this.update(
+            player,
+            enemies,
+            gems,
+            coins,
+            enemyProjectiles,
+            this.particleSystem,
+            (xp) => { if (levelManager) levelManager.addXP(xp, weaponManager); if (onScoreAdd) onScoreAdd(xp * 1.5); },
+            (coinVal) => { if (onCoinAdd) onCoinAdd(coinVal); },
+            null
+        );
     }
 }
