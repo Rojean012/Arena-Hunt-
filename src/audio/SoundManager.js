@@ -46,6 +46,25 @@ export class SoundManager {
         osc.stop(this.ctx.currentTime + 0.1);
     }
 
+    playEnemyHit() {
+        if (this.isMuted || !this.ctx) return;
+        this.resumeContext();
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(250, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.08);
+
+        gain.gain.setValueAtTime(0.2 * this.masterVolume, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.08);
+    }
+
     playEnemyDeath() {
         if (this.isMuted || !this.ctx) return;
         this.resumeContext();

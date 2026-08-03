@@ -2,10 +2,6 @@ import { Entity } from './Entity.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { soundManager } from '../audio/SoundManager.js';
 
-// Preload Mutant Monster 2D Sprite Image
-const monsterImage = new Image();
-monsterImage.src = '/assets/images/mutant_monster.jpg';
-
 export class Enemy extends Entity {
     constructor(x, y, type = 'slime') {
         let spec = GameConfig.enemies[type];
@@ -165,38 +161,61 @@ export class Enemy extends Entity {
         if (this.type === 'bear' && this.isCharging) {
             ctx.fillStyle = 'rgba(231, 76, 60, 0.4)';
             ctx.beginPath();
-            ctx.arc(0, 0, r + 10, 0, Math.PI * 2);
+            ctx.arc(0, 0, r + 12, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        // Render High-Definition 2D Mutant Monster Image Sprite Asset!
-        if (monsterImage.complete && monsterImage.naturalWidth !== 0) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 1.1, 0, Math.PI * 2);
-            ctx.clip(); // Clip image inside sprite circle
+        // Detailed Procedural Mutant Monster Drawing
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.strokeStyle = '#111827';
+        ctx.lineWidth = 2;
+        ctx.stroke();
 
-            ctx.drawImage(monsterImage, -r * 1.3, -r * 1.3, r * 2.6, r * 2.6);
-            ctx.restore();
+        // Monster Horns / Spikes
+        ctx.fillStyle = '#f87171';
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.5, -r * 0.7);
+        ctx.lineTo(-r * 0.8, -r * 1.3);
+        ctx.lineTo(-r * 0.2, -r * 0.9);
+        ctx.fill();
 
-            ctx.strokeStyle = this.color;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 1.1, 0, Math.PI * 2);
-            ctx.stroke();
-        } else {
-            // Fallback rendering
-            ctx.fillStyle = this.color;
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fill();
-        }
+        ctx.beginPath();
+        ctx.moveTo(r * 0.5, -r * 0.7);
+        ctx.lineTo(r * 0.8, -r * 1.3);
+        ctx.lineTo(r * 0.2, -r * 0.9);
+        ctx.fill();
+
+        // Glowing Eyes
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(-r * 0.35, -r * 0.2, 4, 0, Math.PI * 2);
+        ctx.arc(r * 0.35, -r * 0.2, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(-r * 0.35, -r * 0.2, 2, 0, Math.PI * 2);
+        ctx.arc(r * 0.35, -r * 0.2, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Sharp Teeth
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.4, r * 0.2);
+        ctx.lineTo(-r * 0.2, r * 0.5);
+        ctx.lineTo(0, r * 0.2);
+        ctx.lineTo(r * 0.2, r * 0.5);
+        ctx.lineTo(r * 0.4, r * 0.2);
+        ctx.fill();
 
         // Monster Health Bar
         if (this.health < this.maxHealth) {
             const barW = r * 2;
             const barH = 4;
-            const barY = -r - 10;
+            const barY = -r - 12;
             const pct = Math.max(0, this.health / this.maxHealth);
 
             ctx.fillStyle = 'rgba(0,0,0,0.6)';
