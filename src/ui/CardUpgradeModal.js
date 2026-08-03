@@ -53,9 +53,13 @@ export class CardUpgradeModal {
 
             if (mouseX >= cx && mouseX <= cx + cardW && mouseY >= cy && mouseY <= cy + cardH) {
                 this.hoveredIndex = i;
-                if (input.mouse.down || input.mouse.clicked) {
-                    input.mouse.down = false;
-                    input.mouse.clicked = false;
+                
+                // Check clickPending || isJustPressed || isDown
+                if (input.mouse.clickPending || input.mouse.isJustPressed || input.mouse.isDown) {
+                    input.clearJustPressed();
+                    input.mouse.isDown = false;
+                    input.mouse.clickPending = false;
+                    
                     if (levelManager.selectUpgrade) {
                         levelManager.selectUpgrade(i, weaponManager, player);
                     } else if (levelManager.selectCard) {

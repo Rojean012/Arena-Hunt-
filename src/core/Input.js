@@ -1,10 +1,10 @@
 /**
- * InputManager - Cross-platform Mouse, Keyboard & Touch Input System
+ * InputManager - Cross-platform Mouse, Keyboard & Touch Input System with Bulletproof Click Queueing
  */
 export class InputManager {
     constructor() {
         this.keys = {};
-        this.mouse = { x: 0, y: 0, worldX: 0, worldY: 0, isDown: false, isJustPressed: false };
+        this.mouse = { x: 0, y: 0, worldX: 0, worldY: 0, isDown: false, isJustPressed: false, clickPending: false };
         this.touch = { active: false, x: 0, y: 0 };
         this.listenersAttached = false;
     }
@@ -34,10 +34,16 @@ export class InputManager {
             this.updateMousePos(e);
             this.mouse.isDown = true;
             this.mouse.isJustPressed = true;
+            this.mouse.clickPending = true;
         });
 
         window.addEventListener('mouseup', () => {
             this.mouse.isDown = false;
+        });
+
+        window.addEventListener('click', (e) => {
+            this.updateMousePos(e);
+            this.mouse.clickPending = true;
         });
 
         // Touch support
@@ -46,6 +52,7 @@ export class InputManager {
                 this.updateTouchPos(e.touches[0]);
                 this.mouse.isDown = true;
                 this.mouse.isJustPressed = true;
+                this.mouse.clickPending = true;
             }
         });
 
@@ -108,6 +115,7 @@ export class InputManager {
 
     clearJustPressed() {
         this.mouse.isJustPressed = false;
+        this.mouse.clickPending = false;
     }
 }
 
