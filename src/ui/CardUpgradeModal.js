@@ -1,122 +1,129 @@
 import { input } from '../core/Input.js';
 
+// Preload 2D Upgrade Card Background Asset
+const cardBgImage = new Image();
+cardBgImage.src = '/assets/images/card_bg.jpg';
+
 export class CardUpgradeModal {
     constructor() {
-        this.hoverIndex = -1;
+        this.hoveredIndex = -1;
     }
 
     update(levelManager, weaponManager, player) {
         if (!levelManager.isLevelingUp) return;
 
-        const cards = levelManager.cardOptions;
-        if (!cards || cards.length === 0) return;
+        const options = levelManager.currentOptions;
+        if (!options || options.length === 0) return;
 
-        const mx = input.mouse.x;
-        const my = input.mouse.y;
+        // Check Card Selection Click
+        const mouseX = input.mouse.x;
+        const mouseY = input.mouse.y;
 
-        const cardW = 280;
-        const cardH = 360;
-        const gap = 30;
-        const totalW = cards.length * cardW + (cards.length - 1) * gap;
+        const cardW = 210;
+        const cardH = 300;
+        const totalW = options.length * cardW + (options.length - 1) * 30;
         const startX = (window.innerWidth - totalW) / 2;
-        const startY = (window.innerHeight - cardH) / 2 + 30;
+        const startY = (window.innerHeight - cardH) / 2;
 
-        this.hoverIndex = -1;
+        this.hoveredIndex = -1;
 
-        cards.forEach((card, index) => {
-            const cx = startX + index * (cardW + gap);
+        for (let i = 0; i < options.length; i++) {
+            const cx = startX + i * (cardW + 30);
             const cy = startY;
 
-            if (mx >= cx && mx <= cx + cardW && my >= cy && my <= cy + cardH) {
-                this.hoverIndex = index;
-
-                if (input.mouse.isJustPressed) {
-                    levelManager.selectCard(card, weaponManager, player);
-                    input.clearJustPressed();
+            if (mouseX >= cx && mouseX <= cx + cardW && mouseY >= cy && mouseY <= cy + cardH) {
+                this.hoveredIndex = i;
+                if (input.mouse.down) {
+                    input.mouse.down = false;
+                    levelManager.selectUpgrade(i, weaponManager, player);
+                    break;
                 }
             }
-        });
+        }
     }
 
     render(ctx, levelManager, canvasWidth, canvasHeight) {
         if (!levelManager.isLevelingUp) return;
 
-        const cards = levelManager.cardOptions;
-        if (!cards || cards.length === 0) return;
+        const options = levelManager.currentOptions;
+        if (!options || options.length === 0) return;
 
         ctx.save();
 
-        // Dark dim backdrop
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        // Dark Modal Backdrop Overlay
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
         // Header Title
         ctx.textAlign = 'center';
         ctx.fillStyle = '#f1c40f';
-        ctx.font = 'bold 54px Arial';
-        ctx.fillText('LEVEL UP!', canvasWidth / 2, 110);
+        ctx.font = 'bold 36px Arial';
+        ctx.fillText('⚡ LEVEL UP! CHOOSE YOUR UPGRADE ⚡', canvasWidth / 2, canvasHeight * 0.18);
 
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '22px Arial';
-        ctx.fillText('CHOOSE YOUR WEAPON UPGRADE', canvasWidth / 2, 150);
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '16px Arial';
+        ctx.fillText('Pick 1 power to enhance Wang Lin during battle', canvasWidth / 2, canvasHeight * 0.22);
 
-        const cardW = 280;
-        const cardH = 360;
-        const gap = 30;
-        const totalW = cards.length * cardW + (cards.length - 1) * gap;
+        // Render 3 Choice Upgrade Cards
+        const cardW = 210;
+        const cardH = 300;
+        const totalW = options.length * cardW + (options.length - 1) * 30;
         const startX = (canvasWidth - totalW) / 2;
-        const startY = (canvasHeight - cardH) / 2 + 30;
+        const startY = (canvasHeight - cardH) / 2;
 
-        cards.forEach((card, index) => {
-            const cx = startX + index * (cardW + gap);
+        options.forEach((opt, i) => {
+            const cx = startX + i * (cardW + 30);
             const cy = startY;
-            const isHovered = index === this.hoverIndex;
+            const isHovered = (this.hoveredIndex === i);
 
             ctx.save();
-            ctx.translate(cx, cy);
+            if (isHovered) {
+                ctx.translate(0, -8);
+            }
 
-            // Card Shadow
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            ctx.fillRect(5, 5, cardW, cardH);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
 
-            // Card Body Background
-            ctx.fillStyle = isHovered ? '#2c3e50' : '#1a252f';
-            ctx.fillRect(0, 0, cardW, cardH);
+            // Draw 2D Card Asset Background
+            if (cardBgImage.complete && cardBgImage.naturalWidth !== 0) {
+                ctx.drawImage(cardBgImage, cx, cy, cardW, cardH);
+            } else {
+                ctx.fillStyle = 'rgba(30, 41, 59, 0.95)';
+                ctx.fillRect(cx, cy, cardW, cardH);
+            }
 
-            // Border
-            ctx.strokeStyle = card.rarity === 'RARE' ? '#f1c40f' : '#3498db';
-            ctx.lineWidth = isHovered ? 4 : 2;
-            ctx.strokeRect(0, 0, cardW, cardH);
+            // Card Border Highlight
+            ctx.strokeStyle = isHovered ? '#00ffff' : '#f1c40f';
+            ctx.lineWidth = isHovered ? 3.5 : 2;
+            ctx.strokeRect(cx, cy, cardW, cardH);
 
-            // Subtitle Badge
-            ctx.fillStyle = card.rarity === 'RARE' ? '#f39c12' : '#2980b9';
-            ctx.fillRect(15, 15, cardW - 30, 30);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 14px Arial';
-            ctx.fillText(card.subtitle, cardW / 2, 35);
+            // Card Icon
+            ctx.font = '48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(opt.icon, cx + cardW / 2, cy + 75);
 
-            // Icon
-            ctx.font = '72px Arial';
-            ctx.fillText(card.icon, cardW / 2, 140);
-
-            // Title
-            ctx.fillStyle = '#ffffff';
+            // Card Name
+            ctx.fillStyle = isHovered ? '#00ffff' : '#ffffff';
             ctx.font = 'bold 18px Arial';
-            ctx.fillText(card.title, cardW / 2, 200);
+            ctx.fillText(opt.name, cx + cardW / 2, cy + 130);
 
-            // Description
-            ctx.fillStyle = '#bdc3c7';
-            ctx.font = '14px Arial';
-            
-            // Wrap text description
-            this.wrapText(ctx, card.desc, cardW / 2, 240, cardW - 40, 20);
+            // Action Badge (NEW / UPGRADE)
+            ctx.fillStyle = opt.type === 'NEW' ? '#2ecc71' : '#e67e22';
+            ctx.fillRect(cx + 30, cy + 145, cardW - 60, 24);
 
-            // Choose Button
-            ctx.fillStyle = isHovered ? '#2ecc71' : '#27ae60';
-            ctx.fillRect(20, cardH - 55, cardW - 40, 40);
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 16px Arial';
-            ctx.fillText('SELECT CARD', cardW / 2, cardH - 30);
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText(opt.type === 'NEW' ? '✦ NEW WEAPON ✦' : `★ LEVEL ${opt.level} ★`, cx + cardW / 2, cy + 161);
+
+            // Description Text Wrapping
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = '13px Arial';
+            this.drawWrappedText(ctx, opt.description, cx + 15, cy + 195, cardW - 30, 18);
+
+            // Select Button Prompt
+            ctx.fillStyle = isHovered ? '#00ffff' : '#f1c40f';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText(isHovered ? '▶ CLICK TO CHOOSE ◀' : 'SELECT', cx + cardW / 2, cy + cardH - 20);
 
             ctx.restore();
         });
@@ -124,21 +131,22 @@ export class CardUpgradeModal {
         ctx.restore();
     }
 
-    wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+    drawWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
         const words = text.split(' ');
         let line = '';
+        let currentY = y;
+
         for (let n = 0; n < words.length; n++) {
             const testLine = line + words[n] + ' ';
             const metrics = ctx.measureText(testLine);
-            const testWidth = metrics.width;
-            if (testWidth > maxWidth && n > 0) {
-                ctx.fillText(line, x, y);
+            if (metrics.width > maxWidth && n > 0) {
+                ctx.fillText(line, x + maxWidth / 2, currentY);
                 line = words[n] + ' ';
-                y += lineHeight;
+                currentY += lineHeight;
             } else {
                 line = testLine;
             }
         }
-        ctx.fillText(line, x, y);
+        ctx.fillText(line, x + maxWidth / 2, currentY);
     }
 }

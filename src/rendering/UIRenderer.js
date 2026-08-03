@@ -1,8 +1,8 @@
 import { GameConfig } from '../config/GameConfig.js';
 
-// Preload Wave Warning Banner 2D Image Asset
+// Preload Wave Warning Banner V2 2D Image Asset
 const waveBannerImage = new Image();
-waveBannerImage.src = '/assets/images/wave_banner.jpg';
+waveBannerImage.src = '/assets/images/wave_banner_v2.jpg';
 
 export class UIRenderer {
     renderHUD(ctx, player, score, coins, highScore, waveTier, levelManager, weaponManager, spawner, canvasWidth, canvasHeight) {
@@ -74,10 +74,10 @@ export class UIRenderer {
             slotX += 38;
         });
 
-        // 4. BOLD WAVE SIGNALING IMAGE BANNER WITH TEXT OVERLAY
+        // 4. SLEEK DARK XIANXIA WAVE SIGNALING IMAGE BANNER
         if (spawner && spawner.waveNoticeTimer > 0) {
-            const bannerW = 620;
-            const bannerH = 90;
+            const bannerW = 640;
+            const bannerH = 100;
             const bannerX = (canvasWidth - bannerW) / 2;
             const bannerY = canvasHeight * 0.22;
 
@@ -88,15 +88,15 @@ export class UIRenderer {
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
 
-            // Draw High-Res 2D Wave Banner Asset Frame
+            // Draw High-Res 2D Wave Banner V2 Frame
             if (waveBannerImage.complete && waveBannerImage.naturalWidth !== 0) {
                 ctx.drawImage(waveBannerImage, bannerX, bannerY, bannerW, bannerH);
             } else {
-                ctx.fillStyle = 'rgba(192, 57, 43, 0.9)';
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
                 ctx.fillRect(bannerX, bannerY, bannerW, bannerH);
             }
 
-            ctx.strokeStyle = '#f1c40f';
+            ctx.strokeStyle = '#dc2626';
             ctx.lineWidth = 3;
             ctx.strokeRect(bannerX, bannerY, bannerW, bannerH);
 
@@ -104,7 +104,7 @@ export class UIRenderer {
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 24px Arial';
-            ctx.fillText(spawner.waveNoticeText, canvasWidth / 2, bannerY + 52);
+            ctx.fillText(spawner.waveNoticeText, canvasWidth / 2, bannerY + 58);
 
             ctx.restore();
         }

@@ -2,6 +2,49 @@ import { Entity } from './Entity.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { soundManager } from '../audio/SoundManager.js';
 
+// Preload Enemy 2D Asset Images with Chroma-Key Background Filters
+const enemySprites = {};
+
+function loadEnemySprite(type, src) {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0);
+
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+
+            // Key out white / light background pixels
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                if (r > 190 && g > 190 && b > 190) {
+                    data[i + 3] = 0; // Make background transparent
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+            enemySprites[type] = canvas;
+        } catch (e) {
+            enemySprites[type] = img;
+        }
+    };
+}
+
+loadEnemySprite('slime', '/assets/images/slime_enemy.jpg');
+loadEnemySprite('miniSlime', '/assets/images/slime_enemy.jpg');
+loadEnemySprite('goblin', '/assets/images/goblin_enemy.jpg');
+loadEnemySprite('ghost', '/assets/images/ghost_enemy.jpg');
+loadEnemySprite('bear', '/assets/images/orc_enemy.jpg');
+
 export class Enemy extends Entity {
     constructor(x, y, type = 'slime') {
         let spec = GameConfig.enemies[type];
@@ -165,7 +208,7 @@ export class Enemy extends Entity {
     render(ctx, screenX, screenY) {
         const r = this.radius;
 
-        // Monster Squish & Stretch Action Animation Transforms!
+        // Monster Action Animations
         const squishX = 1.0 + Math.sin(this.animTimer * 2) * 0.08;
         const squishY = 1.0 - Math.sin(this.animTimer * 2) * 0.08;
         const bobY = Math.abs(Math.sin(this.animTimer * 3)) * -3;
@@ -173,6 +216,9 @@ export class Enemy extends Entity {
         ctx.save();
         ctx.translate(screenX, screenY + bobY);
         ctx.scale(squishX, squishY);
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
 
         // Charger Red Telegraph Arc
         if (this.type === 'bear' && this.isCharging) {
@@ -182,51 +228,27 @@ export class Enemy extends Entity {
             ctx.fill();
         }
 
-        // Detailed Procedural Mutant Monster Drawing with Hit Flash Reaction
-        ctx.beginPath();
-        ctx.arc(0, 0, r, 0, Math.PI * 2);
-        ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : this.color;
-        ctx.fill();
-        ctx.strokeStyle = '#111827';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        // Render 2D Enemy Sprite Image Asset
+        const sprite = enemySprites[this.type];
+        if (sprite && (sprite.complete || sprite.width)) {
+            ctx.save();
+            ctx.drawImage(sprite, -r * 1.3, -r * 1.3, r * 2.6, r * 2.6);
+            ctx.restore();
+        } else {
+            // Fallback rendering
+            ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : this.color;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
-        // Horns / Spikes
-        ctx.fillStyle = this.hitFlash > 0 ? '#ff8888' : '#f87171';
-        ctx.beginPath();
-        ctx.moveTo(-r * 0.5, -r * 0.7);
-        ctx.lineTo(-r * 0.8, -r * 1.3);
-        ctx.lineTo(-r * 0.2, -r * 0.9);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.moveTo(r * 0.5, -r * 0.7);
-        ctx.lineTo(r * 0.8, -r * 1.3);
-        ctx.lineTo(r * 0.2, -r * 0.9);
-        ctx.fill();
-
-        // Glowing Eyes
-        ctx.fillStyle = '#facc15';
-        ctx.beginPath();
-        ctx.arc(-r * 0.35, -r * 0.2, 4, 0, Math.PI * 2);
-        ctx.arc(r * 0.35, -r * 0.2, 4, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#000000';
-        ctx.beginPath();
-        ctx.arc(-r * 0.35, -r * 0.2, 2, 0, Math.PI * 2);
-        ctx.arc(r * 0.35, -r * 0.2, 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Sharp Teeth
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.moveTo(-r * 0.4, r * 0.2);
-        ctx.lineTo(-r * 0.2, r * 0.5);
-        ctx.lineTo(0, r * 0.2);
-        ctx.lineTo(r * 0.2, r * 0.5);
-        ctx.lineTo(r * 0.4, r * 0.2);
-        ctx.fill();
+        // Hit Flash Tint
+        if (this.hitFlash > 0) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 1.1, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         // Monster Health Bar
         if (this.health < this.maxHealth) {
