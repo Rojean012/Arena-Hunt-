@@ -2,7 +2,7 @@ import { Entity } from './Entity.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { soundManager } from '../audio/SoundManager.js';
 
-// Preload All 10 High-Res 2D Enemy Asset Images with Gentle Corner-Sampled Background Removal
+// Preload All 10 High-Res 2D Enemy Asset Images & Multi-Step Downsample to Ultra-Sharp Pre-Cached Offscreen Sprites
 const enemySprites = {};
 
 function loadEnemySprite(type, src) {
@@ -10,25 +10,20 @@ function loadEnemySprite(type, src) {
     img.src = src;
     img.onload = () => {
         try {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
+            // Step 1: Background Removal on full resolution canvas
+            const fullCanvas = document.createElement('canvas');
+            fullCanvas.width = img.width;
+            fullCanvas.height = img.height;
+            const fullCtx = fullCanvas.getContext('2d');
+            fullCtx.drawImage(img, 0, 0);
 
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const imgData = fullCtx.getImageData(0, 0, fullCanvas.width, fullCanvas.height);
             const data = imgData.data;
 
-            // Sample 4 corner background pixels
-            const corners = [
-                { r: data[0], g: data[1], b: data[2] },
-                { r: data[(canvas.width - 1) * 4], g: data[(canvas.width - 1) * 4 + 1], b: data[(canvas.width - 1) * 4 + 2] }
-            ];
-            const bgR = corners[0].r;
-            const bgG = corners[0].g;
-            const bgB = corners[0].b;
+            const bgR = data[0];
+            const bgG = data[1];
+            const bgB = data[2];
 
-            // Gentle Feathered Background Keying
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
                 const g = data[i + 1];
@@ -39,7 +34,6 @@ function loadEnemySprite(type, src) {
                 const db = Math.abs(b - bgB);
                 const diff = Math.max(dr, Math.max(dg, db));
 
-                // Pure white canvas background or corner background match
                 if (r > 240 && g > 240 && b > 240) {
                     data[i + 3] = 0;
                 } else if (diff < 18) {
@@ -50,8 +44,20 @@ function loadEnemySprite(type, src) {
                 }
             }
 
-            ctx.putImageData(imgData, 0, 0);
-            enemySprites[type] = canvas;
+            fullCtx.putImageData(imgData, 0, 0);
+
+            // Step 2: Multi-step Downsample to a crisp 256x256 (or 384x384 for bosses) to eliminate all bilinear blur!
+            const targetSize = ['stone_golem', 'frost_dragon', 'bear'].includes(type) ? 384 : 256;
+            const sharpCanvas = document.createElement('canvas');
+            sharpCanvas.width = targetSize;
+            sharpCanvas.height = targetSize;
+            const sharpCtx = sharpCanvas.getContext('2d');
+
+            sharpCtx.imageSmoothingEnabled = true;
+            sharpCtx.imageSmoothingQuality = 'high';
+            sharpCtx.drawImage(fullCanvas, 0, 0, targetSize, targetSize);
+
+            enemySprites[type] = sharpCanvas;
         } catch (e) {
             enemySprites[type] = img;
         }
@@ -102,7 +108,6 @@ export class Enemy extends Entity {
         this.animTimer += 0.12;
         if (this.hitFlash > 0) this.hitFlash--;
 
-        // Calculate INSTANT orientation toward player
         const dx = playerX - this.x;
         const dy = playerY - this.y;
         this.angle = Math.atan2(dy, dx);
@@ -229,7 +234,6 @@ export class Enemy extends Entity {
         }
     }
 
-    // 1. Nine-Tailed Demon Fox AI (Fires 3 Foxfire Orbs)
     updateFoxDemonAI(playerX, playerY, projectiles) {
         this.updateDirectAI(playerX, playerY);
         this.shootTimer++;
@@ -237,6 +241,7 @@ export class Enemy extends Entity {
             this.shootTimer = 0;
             const dist = Math.hypot(playerX - this.x, playerY - this.y);
             if (projectiles && dist < 450) {
+                if (soundManager && soundManager.playShoot) soundManager.playShoot();
                 const baseAngle = Math.atan2(playerY - this.y, playerX - this.x);
                 [-0.25, 0, 0.25].forEach(spread => {
                     const angle = baseAngle + spread;
@@ -256,7 +261,6 @@ export class Enemy extends Entity {
         }
     }
 
-    // 2. Blood Cultist Sorcerer AI (Spawns Erupting Blood Pillar)
     updateCultistAI(playerX, playerY, projectiles) {
         const dx = playerX - this.x;
         const dy = playerY - this.y;
@@ -279,7 +283,7 @@ export class Enemy extends Entity {
                     vy: 0,
                     damage: this.damage * 1.5,
                     radius: 35,
-                    timer: 50, // 50 frame telegraph ring before blast
+                    timer: 50,
                     color: '#b91c1c',
                     dead: false
                 });
@@ -287,7 +291,6 @@ export class Enemy extends Entity {
         }
     }
 
-    // 3. Ironclad Stone Golem AI (Ground Slam Shockwave)
     updateGolemAI(playerX, playerY, projectiles) {
         this.updateDirectAI(playerX, playerY);
         this.shootTimer++;
@@ -310,7 +313,6 @@ export class Enemy extends Entity {
         }
     }
 
-    // 4. Jade Spider Fiend AI (Fires Sticky Slowing Web)
     updateSpiderAI(playerX, playerY, projectiles) {
         this.updateDirectAI(playerX, playerY);
         this.shootTimer++;
@@ -318,6 +320,7 @@ export class Enemy extends Entity {
             this.shootTimer = 0;
             const dist = Math.hypot(playerX - this.x, playerY - this.y);
             if (projectiles && dist < 380) {
+                if (soundManager && soundManager.playShoot) soundManager.playShoot();
                 const angle = Math.atan2(playerY - this.y, playerX - this.x);
                 projectiles.push({
                     type: 'spiderWeb',
@@ -334,7 +337,6 @@ export class Enemy extends Entity {
         }
     }
 
-    // 5. Celestial Frost Dragon AI (Fires Cone of Glacial Frost Breath)
     updateFrostDragonAI(playerX, playerY, projectiles) {
         this.updateDirectAI(playerX, playerY);
         this.shootTimer++;
@@ -342,6 +344,7 @@ export class Enemy extends Entity {
             this.shootTimer = 0;
             const dist = Math.hypot(playerX - this.x, playerY - this.y);
             if (projectiles && dist < 500) {
+                if (soundManager && soundManager.playShoot) soundManager.playShoot();
                 const baseAngle = Math.atan2(playerY - this.y, playerX - this.x);
                 for (let a = -0.4; a <= 0.4; a += 0.15) {
                     const angle = baseAngle + a;
@@ -367,12 +370,13 @@ export class Enemy extends Entity {
 
         if (soundManager && soundManager.playEnemyHit) {
             soundManager.playEnemyHit();
-        } else if (soundManager && soundManager.playHit) {
-            soundManager.playHit();
         }
 
         if (this.health <= 0) {
             this.health = 0;
+            if (soundManager && soundManager.playEnemyDefeat) {
+                soundManager.playEnemyDefeat();
+            }
             return true;
         }
         return false;
@@ -381,7 +385,6 @@ export class Enemy extends Entity {
     render(ctx, screenX, screenY) {
         const r = this.radius;
 
-        // Monster Action Animations
         const squishX = 1.0 + Math.sin(this.animTimer * 2) * 0.08;
         const squishY = 1.0 - Math.sin(this.animTimer * 2) * 0.08;
         const bobY = Math.abs(Math.sin(this.animTimer * 3)) * -3;
@@ -389,7 +392,6 @@ export class Enemy extends Entity {
         ctx.save();
         ctx.translate(screenX, screenY + bobY);
 
-        // Corrected Dynamic Sprite Orientation per Monster Type
         if (this.type === 'snake') {
             ctx.rotate(this.angle - Math.PI / 4);
         } else if (['goblin', 'bear', 'ghost', 'fox_demon', 'cultist_sorcerer', 'stone_golem', 'spider_fiend', 'frost_dragon'].includes(this.type)) {
@@ -400,7 +402,6 @@ export class Enemy extends Entity {
 
         ctx.scale(squishX, squishY);
 
-        // Charger Red Telegraph Arc
         if (this.type === 'bear' && this.isCharging) {
             ctx.fillStyle = 'rgba(231, 76, 60, 0.4)';
             ctx.beginPath();
@@ -408,20 +409,18 @@ export class Enemy extends Entity {
             ctx.fill();
         }
 
-        // Render 2D Enemy Sprite Image Asset
+        // Render Ultra-Sharp Downsampled Pre-Cached Sprite!
         const sprite = enemySprites[this.type];
 
         if (sprite && (sprite.complete || sprite.width)) {
             ctx.drawImage(sprite, -r * 1.4, -r * 1.4, r * 2.8, r * 2.8);
         } else {
-            // Fallback rendering
             ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : this.color;
             ctx.beginPath();
             ctx.arc(0, 0, r, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        // Hit Flash Tint
         if (this.hitFlash > 0) {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
             ctx.beginPath();
@@ -431,7 +430,6 @@ export class Enemy extends Entity {
 
         ctx.restore();
 
-        // Monster Health Bar
         if (this.health < this.maxHealth) {
             ctx.save();
             ctx.translate(screenX, screenY + bobY);

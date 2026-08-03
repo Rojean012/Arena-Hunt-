@@ -1,3 +1,5 @@
+import { soundManager } from '../audio/SoundManager.js';
+
 export class CollisionSystem {
     constructor(particleSystem) {
         this.particleSystem = particleSystem;
@@ -81,6 +83,7 @@ export class CollisionSystem {
                 coin.collect();
                 onCoinAdd(coin.value);
                 this.particleSystem.spawnCoinSparkle(coin.x, coin.y);
+                soundManager.playCoinClink();
             }
         });
     }
