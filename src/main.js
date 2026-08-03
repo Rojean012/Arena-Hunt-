@@ -4,6 +4,7 @@ function boot() {
     const canvas = document.getElementById('gameCanvas');
     if (canvas) {
         const engine = new Engine(canvas);
+        window.gameEngine = engine;
         engine.init();
     }
 }
