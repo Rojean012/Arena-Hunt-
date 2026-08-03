@@ -19,34 +19,37 @@ export class SpawnerSystem {
         this.waveTimer = 0;
         this.waveDuration = 30 * 60; // 30 seconds per wave
 
+        this.totalSpawnedInWave = 0;
+        this.enemiesKilledInWave = 0;
+
         this.milestoneNoticeTimer = 0;
         this.milestoneTitle = '';
 
         // Structured 5-Wave Milestone Spawn Progression Tables
         this.waveSpecs = {
-            1:  { types: ['slime'], maxEnemies: 4, spawnInterval: 180 },
-            2:  { types: ['slime', 'snake'], maxEnemies: 6, spawnInterval: 150 },
-            3:  { types: ['slime', 'snake'], maxEnemies: 8, spawnInterval: 130 },
-            4:  { types: ['goblin', 'ghost'], maxEnemies: 10, spawnInterval: 110 },
-            5:  { types: ['bear'], maxEnemies: 1, spawnInterval: 9999, isBoss: true, title: 'WAVE 5: ORC BERSERKER BOSS' },
+            1:  { types: ['slime'], maxEnemies: 6, totalWaveEnemies: 12, spawnInterval: 120 },
+            2:  { types: ['slime', 'snake'], maxEnemies: 8, totalWaveEnemies: 16, spawnInterval: 100 },
+            3:  { types: ['slime', 'snake'], maxEnemies: 10, totalWaveEnemies: 20, spawnInterval: 85 },
+            4:  { types: ['goblin', 'ghost'], maxEnemies: 12, totalWaveEnemies: 24, spawnInterval: 75 },
+            5:  { types: ['bear'], maxEnemies: 1, totalWaveEnemies: 1, spawnInterval: 9999, isBoss: true, title: 'WAVE 5: ORC BERSERKER BOSS' },
 
-            6:  { types: ['goblin', 'ghost'], maxEnemies: 12, spawnInterval: 100 },
-            7:  { types: ['snake', 'fox_demon'], maxEnemies: 14, spawnInterval: 90 },
-            8:  { types: ['fox_demon', 'cultist_sorcerer'], maxEnemies: 15, spawnInterval: 85 },
-            9:  { types: ['cultist_sorcerer', 'goblin'], maxEnemies: 16, spawnInterval: 80 },
-            10: { types: ['stone_golem'], maxEnemies: 1, spawnInterval: 9999, isBoss: true, title: 'WAVE 10: STONE GOLEM BOSS' },
+            6:  { types: ['goblin', 'ghost'], maxEnemies: 14, totalWaveEnemies: 28, spawnInterval: 70 },
+            7:  { types: ['snake', 'fox_demon'], maxEnemies: 16, totalWaveEnemies: 32, spawnInterval: 65 },
+            8:  { types: ['fox_demon', 'cultist_sorcerer'], maxEnemies: 18, totalWaveEnemies: 36, spawnInterval: 60 },
+            9:  { types: ['cultist_sorcerer', 'goblin'], maxEnemies: 20, totalWaveEnemies: 40, spawnInterval: 55 },
+            10: { types: ['stone_golem'], maxEnemies: 1, totalWaveEnemies: 1, spawnInterval: 9999, isBoss: true, title: 'WAVE 10: STONE GOLEM BOSS' },
 
-            11: { types: ['fox_demon', 'cultist_sorcerer'], maxEnemies: 17, spawnInterval: 75 },
-            12: { types: ['spider_fiend', 'ghost'], maxEnemies: 18, spawnInterval: 70 },
-            13: { types: ['spider_fiend', 'cultist_sorcerer'], maxEnemies: 19, spawnInterval: 65 },
-            14: { types: ['stone_golem', 'bear'], maxEnemies: 20, spawnInterval: 60 },
-            15: { types: ['frost_dragon'], maxEnemies: 1, spawnInterval: 9999, isBoss: true, title: 'WAVE 15: CELESTIAL FROST DRAGON BOSS' },
+            11: { types: ['fox_demon', 'cultist_sorcerer'], maxEnemies: 22, totalWaveEnemies: 44, spawnInterval: 50 },
+            12: { types: ['spider_fiend', 'ghost'], maxEnemies: 24, totalWaveEnemies: 48, spawnInterval: 45 },
+            13: { types: ['spider_fiend', 'cultist_sorcerer'], maxEnemies: 26, totalWaveEnemies: 52, spawnInterval: 40 },
+            14: { types: ['stone_golem', 'bear'], maxEnemies: 28, totalWaveEnemies: 56, spawnInterval: 35 },
+            15: { types: ['frost_dragon'], maxEnemies: 1, totalWaveEnemies: 1, spawnInterval: 9999, isBoss: true, title: 'WAVE 15: CELESTIAL FROST DRAGON BOSS' },
 
-            16: { types: ['spider_fiend', 'frost_dragon'], maxEnemies: 21, spawnInterval: 55 },
-            17: { types: ['fox_demon', 'stone_golem'], maxEnemies: 22, spawnInterval: 50 },
-            18: { types: ['cultist_sorcerer', 'frost_dragon'], maxEnemies: 23, spawnInterval: 45 },
-            19: { types: ['spider_fiend', 'stone_golem', 'frost_dragon'], maxEnemies: 24, spawnInterval: 40 },
-            20: { types: ['frost_dragon', 'bear', 'stone_golem'], maxEnemies: 25, spawnInterval: 35, isBoss: true, title: 'WAVE 20: ULTIMATE CELESTIAL SWARM' }
+            16: { types: ['spider_fiend', 'frost_dragon'], maxEnemies: 30, totalWaveEnemies: 60, spawnInterval: 30 },
+            17: { types: ['fox_demon', 'stone_golem'], maxEnemies: 32, totalWaveEnemies: 64, spawnInterval: 28 },
+            18: { types: ['cultist_sorcerer', 'frost_dragon'], maxEnemies: 34, totalWaveEnemies: 68, spawnInterval: 26 },
+            19: { types: ['spider_fiend', 'stone_golem', 'frost_dragon'], maxEnemies: 36, totalWaveEnemies: 72, spawnInterval: 24 },
+            20: { types: ['frost_dragon', 'bear', 'stone_golem'], maxEnemies: 40, totalWaveEnemies: 80, spawnInterval: 20, isBoss: true, title: 'WAVE 20: ULTIMATE CELESTIAL SWARM' }
         };
     }
 
@@ -57,6 +60,8 @@ export class SpawnerSystem {
         this.currentWave = 1;
         this.spawnTimer = 0;
         this.waveTimer = 0;
+        this.totalSpawnedInWave = 0;
+        this.enemiesKilledInWave = 0;
         this.milestoneNoticeTimer = 180;
         this.milestoneTitle = 'WAVE 1: GEL SWARM';
     }
@@ -67,9 +72,32 @@ export class SpawnerSystem {
         const types = ['slime', 'goblin', 'ghost', 'snake', 'bear', 'fox_demon', 'cultist_sorcerer', 'stone_golem', 'spider_fiend', 'frost_dragon'];
         return {
             types: types,
-            maxEnemies: Math.min(30, 25 + Math.floor((wave - 20) / 2)),
-            spawnInterval: Math.max(25, 35 - Math.floor((wave - 20) / 3))
+            maxEnemies: Math.min(45, 30 + Math.floor((wave - 20) * 2)),
+            totalWaveEnemies: 80 + (wave - 20) * 10,
+            spawnInterval: Math.max(15, 25 - Math.floor((wave - 20) / 2))
         };
+    }
+
+    advanceWave() {
+        this.currentWave++;
+        this.waveTimer = 0;
+        this.totalSpawnedInWave = 0;
+        this.enemiesKilledInWave = 0;
+
+        const newSpec = this.getWaveSpec(this.currentWave);
+        this.milestoneNoticeTimer = 180;
+        this.milestoneTitle = newSpec.title || `MILESTONE: WAVE ${this.currentWave}`;
+    }
+
+    onEnemyDefeated() {
+        this.enemiesKilledInWave++;
+        const spec = this.getWaveSpec(this.currentWave);
+
+        if (spec.isBoss && this.enemies.length <= 1) {
+            this.advanceWave();
+        } else if (this.enemiesKilledInWave >= spec.totalWaveEnemies) {
+            this.advanceWave();
+        }
     }
 
     update(playerX, playerY) {
@@ -78,24 +106,20 @@ export class SpawnerSystem {
 
         const spec = this.getWaveSpec(this.currentWave);
 
+        // Advance wave on timer expire or total kills reached
         if (this.waveTimer >= this.waveDuration && !spec.isBoss) {
-            this.currentWave++;
-            this.waveTimer = 0;
-            const newSpec = this.getWaveSpec(this.currentWave);
-
-            if (newSpec.title || this.currentWave % 5 === 0 || this.currentWave % 5 === 1) {
-                this.milestoneNoticeTimer = 180;
-                this.milestoneTitle = newSpec.title || `MILESTONE: WAVE ${this.currentWave}`;
-            }
+            this.advanceWave();
         }
 
+        // Spawn Enemies near player
         this.spawnTimer++;
         if (this.spawnTimer >= spec.spawnInterval) {
             this.spawnTimer = 0;
 
-            if (this.enemies.length < spec.maxEnemies) {
+            if (this.enemies.length < spec.maxEnemies && (spec.isBoss || this.totalSpawnedInWave < spec.totalWaveEnemies)) {
                 const type = spec.types[Math.floor(Math.random() * spec.types.length)];
                 this.spawnEnemyNearPlayer(playerX, playerY, type);
+                this.totalSpawnedInWave++;
             }
         }
 
@@ -105,7 +129,8 @@ export class SpawnerSystem {
     }
 
     spawnEnemyNearPlayer(playerX, playerY, type) {
-        const spawnDist = 450 + Math.random() * 200;
+        // Spawn distance 280-400px: Active, intense combat right around player screen!
+        const spawnDist = 280 + Math.random() * 120;
         const angle = Math.random() * Math.PI * 2;
 
         let sx = playerX + Math.cos(angle) * spawnDist;
@@ -123,12 +148,12 @@ export class SpawnerSystem {
     spawnRewards(x, y, enemyType) {
         const isBoss = ['bear', 'stone_golem', 'frost_dragon'].includes(enemyType);
         const gemCount = isBoss ? 5 : 1;
-        const coinCount = isBoss ? 3 : (Math.random() < 0.3 ? 1 : 0);
+        const coinCount = isBoss ? 3 : (Math.random() < 0.35 ? 1 : 0);
 
         for (let i = 0; i < gemCount; i++) {
             const gx = x + (Math.random() - 0.5) * 30;
             const gy = y + (Math.random() - 0.5) * 30;
-            this.gems.push(new Gem(gx, gy, isBoss ? 25 : 10));
+            this.gems.push(new Gem(gx, gy, isBoss ? 25 : 5));
         }
 
         for (let i = 0; i < coinCount; i++) {

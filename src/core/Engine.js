@@ -21,6 +21,12 @@ export class Engine {
         this.pauseScene = new PauseScene(this.sceneManager, this.gameScene);
         this.gameOverScene = new GameOverScene(this.sceneManager, this.gameScene);
 
+        // Register scenes in manager
+        this.sceneManager.registerScene('menu', this.menuScene);
+        this.sceneManager.registerScene('game', this.gameScene);
+        this.sceneManager.registerScene('pause', this.pauseScene);
+        this.sceneManager.registerScene('gameOver', this.gameOverScene);
+
         this.isRunning = false;
         
         platformSDK.registerLifecycleCallbacks({
@@ -29,6 +35,14 @@ export class Engine {
             onMute: () => {},
             onUnmute: () => {}
         });
+    }
+
+    static get width() {
+        return window.innerWidth || 1920;
+    }
+
+    static get height() {
+        return window.innerHeight || 1080;
     }
 
     async init() {
@@ -86,6 +100,7 @@ export class Engine {
         this.renderer.clear();
         this.sceneManager.render(this.renderer.ctx, this.renderer);
 
+        // Uncapped high-refresh rate loop (144Hz, 240Hz, 360Hz+)
         requestAnimationFrame(this.loop);
     }
 }

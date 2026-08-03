@@ -116,15 +116,23 @@ export class UIRenderer {
         ctx.fillStyle = '#f1c40f';
         ctx.fillText(`Coins: $${coins || 0}`, 20, 118);
 
-        // 3. Active Weapon 2D Textures Bar (Top Right)
+        // 3. Wave Counter & Enemy Kill Counter (Top Right)
         ctx.textAlign = 'right';
         ctx.font = '700 16px "Outfit", sans-serif';
         ctx.fillStyle = '#ef4444';
-        ctx.fillText(`WAVE TIER ${waveTier || 1}`, cw - 20, 35);
+        ctx.fillText(`WAVE TIER ${waveTier || 1}`, cw - 20, 30);
+
+        const killed = spawner ? (spawner.enemiesKilledInWave || 0) : 0;
+        const spec = spawner && spawner.getWaveSpec ? spawner.getWaveSpec(waveTier || 1) : { totalWaveEnemies: 12 };
+        const totalEnemies = spec ? spec.totalWaveEnemies || 12 : 12;
+
+        ctx.font = '600 13px "Outfit", sans-serif';
+        ctx.fillStyle = '#facc15';
+        ctx.fillText(`Killed: ${killed} / ${totalEnemies}`, cw - 20, 50);
 
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '500 14px "Outfit", sans-serif';
-        ctx.fillText('WEAPONS:', cw - 220, 60);
+        ctx.font = '500 13px "Outfit", sans-serif';
+        ctx.fillText('WEAPONS:', cw - 220, 72);
 
         let slotX = cw - 210;
         if (weaponManager && weaponManager.weapons) {
@@ -133,22 +141,22 @@ export class UIRenderer {
                 if (!w || !w.config) return;
 
                 ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-                ctx.fillRect(slotX, 68, 36, 36);
+                ctx.fillRect(slotX, 80, 34, 34);
 
                 ctx.strokeStyle = '#f1c40f';
                 ctx.lineWidth = 1.5;
-                ctx.strokeRect(slotX, 68, 36, 36);
+                ctx.strokeRect(slotX, 80, 34, 34);
 
                 const tex = hudWeaponTextures[id];
                 if (tex && (tex.complete || tex.width)) {
-                    ctx.drawImage(tex, slotX + 3, 71, 30, 30);
+                    ctx.drawImage(tex, slotX + 2, 82, 30, 30);
                 } else {
                     ctx.font = '18px Arial';
                     ctx.textAlign = 'center';
-                    ctx.fillText(w.config.icon || '⚔️', slotX + 18, 92);
+                    ctx.fillText(w.config.icon || '⚔️', slotX + 17, 103);
                 }
 
-                slotX += 42;
+                slotX += 40;
             });
         }
 

@@ -150,7 +150,7 @@ export class GameScene {
         // 6. Particle System Update
         this.particles.update();
 
-        // 7. Collisions & Pickups (Increment HUD Gem Count & Coin Count!)
+        // 7. Collisions & Pickups
         this.collision.update(
             this.player,
             this.spawner.enemies,
@@ -212,6 +212,7 @@ export class GameScene {
     onEnemyDefeated(enemy) {
         this.score += enemy.scoreValue;
         this.enemiesDefeated++;
+        this.spawner.onEnemyDefeated(); // Advance wave progression kill counter!
         this.spawner.spawnRewards(enemy.x, enemy.y, enemy.type);
     }
 
@@ -250,7 +251,7 @@ export class GameScene {
         // 2. Custom Enemy Projectile & Attack Rendering
         this.renderEnemyProjectiles(ctx);
 
-        // 3. UI Overlay (HUD, HP, XP, Level, Wave Banner)
+        // 3. UI Overlay (HUD, HP, XP, Level, Wave Banner, Kill Counter)
         this.uiRenderer.render(
             ctx,
             this.player,

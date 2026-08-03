@@ -105,8 +105,8 @@ export class WeaponManager {
             w.config.baseDamage += 20;
             w.config.count = Math.min(6, Math.floor(1 + w.level / 2));
         } else if (weaponId === 'flameAura') {
-            w.config.baseDamage += 6;
-            w.config.radius += 12;
+            w.config.baseDamage += 8;
+            w.config.radius += 14;
         } else if (weaponId === 'boomerang') {
             w.config.baseDamage += 10;
             w.config.count = Math.min(4, Math.floor(1 + w.level / 3));
@@ -217,10 +217,10 @@ export class WeaponManager {
             }
         }
 
-        // 4. Rotating Flame Ring (Counter-Clockwise Spin!)
+        // 4. Rotating Pulsing Flame Ring (Fade In -> Rotate -> Fade Out Loop!)
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
-            this.flameRotationAngle -= 0.035; // Rotate in opposite direction!
+            this.flameRotationAngle -= 0.035;
 
             w.cooldownTimer++;
             if (w.cooldownTimer >= w.config.cooldown) {
@@ -347,16 +347,20 @@ export class WeaponManager {
         const px = camera.getScreenX(player.x, canvasWidth);
         const py = camera.getScreenY(player.y, canvasHeight);
 
-        // 1. Sleek Thinner Rotating Flame Ring (Counter-Clockwise Spin!)
+        // 1. Sleek Thinner Pulsing Flame Ring (Fade In -> Rotate -> Fade Out Loop!)
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
             const auraImg = weaponImages['flameAura'];
             const radius = w.config.radius;
-            const dSize = radius * 2.1; // Thinner ring size!
+            const dSize = radius * 1.8; // Thinner ring size!
+
+            // Smooth Pulsing Alpha Loop (Fade In -> Rotate -> Fade Out)
+            const pulseAlpha = Math.max(0.12, (Math.sin(this.flameRotationAngle * 2.5) * 0.45 + 0.55));
 
             ctx.save();
             ctx.translate(px, py);
             ctx.rotate(this.flameRotationAngle);
+            ctx.globalAlpha = pulseAlpha;
 
             if (auraImg && (auraImg.complete || auraImg.width)) {
                 ctx.drawImage(auraImg, -dSize / 2, -dSize / 2, dSize, dSize);
