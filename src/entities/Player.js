@@ -2,7 +2,6 @@ import { Entity } from './Entity.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { soundManager } from '../audio/SoundManager.js';
 
-// Preload Wang Lin High-Res 2D Hero Asset Image
 let heroCanvas = null;
 
 function loadHeroSprite(src) {
@@ -63,8 +62,9 @@ export class Player extends Entity {
 
         this.level = 1;
         this.xp = 0;
-        this.xpToNextLevel = (GameConfig.xp && GameConfig.xp.baseXP) ? GameConfig.xp.baseXP : 10;
+        this.xpToNextLevel = (GameConfig.xp && GameConfig.xp.baseXP) ? GameConfig.xp.baseXP : 20;
         this.coins = 0;
+        this.gemsCollected = 0;
 
         this.invulnerableTimer = 0;
         this.hitFlash = 0;
@@ -79,8 +79,9 @@ export class Player extends Entity {
         this.speed = this.baseSpeed;
         this.level = 1;
         this.xp = 0;
-        this.xpToNextLevel = (GameConfig.xp && GameConfig.xp.baseXP) ? GameConfig.xp.baseXP : 10;
+        this.xpToNextLevel = (GameConfig.xp && GameConfig.xp.baseXP) ? GameConfig.xp.baseXP : 20;
         this.coins = 0;
+        this.gemsCollected = 0;
         this.invulnerableTimer = 0;
         this.hitFlash = 0;
     }
@@ -128,6 +129,8 @@ export class Player extends Entity {
 
     addXP(amount) {
         this.xp += amount;
+        this.gemsCollected += 1; // Increment total emerald gems collected count!
+
         if (this.xp >= this.xpToNextLevel) {
             this.levelUp();
             return true;

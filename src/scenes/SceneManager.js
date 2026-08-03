@@ -4,18 +4,41 @@
 export class SceneManager {
     constructor() {
         this.currentScene = null;
+        this.scenes = {};
+    }
+
+    registerScene(name, instance) {
+        this.scenes[name] = instance;
     }
 
     switchScene(newScene, data = {}) {
+        let target = newScene;
+
+        if (typeof newScene === 'string') {
+            target = this.scenes[newScene] || (window.gameEngine ? window.gameEngine[`${newScene}Scene`] : null);
+        }
+
         if (this.currentScene && this.currentScene.exit) {
             this.currentScene.exit();
         }
 
-        this.currentScene = newScene;
+        this.currentScene = target;
         
         if (this.currentScene && this.currentScene.enter) {
             this.currentScene.enter(data);
         }
+    }
+
+    push(sceneName, data = {}) {
+        this.switchScene(sceneName, data);
+    }
+
+    pop(data = {}) {
+        this.switchScene('game', data);
+    }
+
+    change(sceneName, data = {}) {
+        this.switchScene(sceneName, data);
     }
 
     update(engine) {

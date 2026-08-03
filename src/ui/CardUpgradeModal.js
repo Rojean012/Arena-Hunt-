@@ -1,7 +1,7 @@
 import { input } from '../core/Input.js';
 import { soundManager } from '../audio/SoundManager.js';
 
-// Preload 2D Power Card Icon Assets with Fast Offscreen Canvases
+// Preload All 8 2D Power Card Icon Assets with Zero-Stutter Offscreen Canvases
 const powerCardImages = {};
 
 function loadPowerCardImage(id, src) {
@@ -48,14 +48,14 @@ function loadPowerCardImage(id, src) {
     };
 }
 
-// Load all 2D Power Icons from /assets/images/
-loadPowerCardImage('swords', '/assets/images/sword_power_icon.jpg');
-loadPowerCardImage('fireball', '/assets/images/fireball_power_icon.jpg');
-loadPowerCardImage('lightning', '/assets/images/thunder_icon_v2.jpg');
-loadPowerCardImage('flameAura', '/assets/images/flame_ring_icon_v2.jpg');
-loadPowerCardImage('boomerang', '/assets/images/boomerang_power_icon.jpg');
+// Load exact filenames from /assets/images/
+loadPowerCardImage('swords', '/assets/images/sword_icon.jpg');
+loadPowerCardImage('fireball', '/assets/images/fireball_icon.jpg');
+loadPowerCardImage('lightning', '/assets/images/thunder_icon.jpg');
+loadPowerCardImage('flameAura', '/assets/images/flame_ring_icon.jpg');
+loadPowerCardImage('boomerang', '/assets/images/boomerang_icon.jpg');
 loadPowerCardImage('stat_speed', '/assets/images/boots_speed_icon.jpg');
-loadPowerCardImage('stat_magnet', '/assets/images/gem_magnet_icon_v2.jpg');
+loadPowerCardImage('stat_magnet', '/assets/images/gem_magnet_icon.jpg');
 loadPowerCardImage('stat_health', '/assets/images/vitality_elixir_icon.jpg');
 
 export class CardUpgradeModal {
@@ -90,9 +90,8 @@ export class CardUpgradeModal {
             if (mx >= cx && mx <= cx + cardWidth && my >= cardY && my <= cardY + cardHeight) {
                 this.hoveredIndex = i;
 
-                if (input.mouse.clicked || input.mouse.justClicked) {
-                    input.mouse.clicked = false;
-                    input.mouse.justClicked = false;
+                if (input.wasJustClicked() || input.mouse.isDown) {
+                    input.consumeClick();
                     levelManager.selectUpgrade(i, weaponManager, player);
 
                     if (soundManager && soundManager.playButtonClick) {
