@@ -10,7 +10,6 @@ function loadEnemySprite(type, src) {
     img.src = src;
     img.onload = () => {
         try {
-            // Hardware-accelerated fast downscale to 256x256 (384x384 for bosses)
             const targetSize = ['stone_golem', 'frost_dragon', 'bear'].includes(type) ? 384 : 256;
             const canvas = document.createElement('canvas');
             canvas.width = targetSize;
@@ -21,7 +20,6 @@ function loadEnemySprite(type, src) {
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, targetSize, targetSize);
 
-            // Fast single-pass background keying on downscaled sprite (Instant!)
             const imgData = ctx.getImageData(0, 0, targetSize, targetSize);
             const data = imgData.data;
 
@@ -100,13 +98,16 @@ export class Enemy extends Entity {
         const dy = playerY - this.y;
         const dist = Math.hypot(dx, dy);
 
-        // Smooth head-first orientation calculation
-        if (dist > 10) {
+        // Smooth angle tracking (Prevents snake spinning in circles!)
+        if (dist > 25) {
             const targetAngle = Math.atan2(dy, dx);
             let diff = targetAngle - this.angle;
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
-            this.angle += diff * 0.2;
+            this.angle += diff * 0.12;
+            while (this.angle < -Math.PI) this.angle += Math.PI * 2;
+            while (this.angle > Math.PI) this.angle -= Math.PI * 2;
+
             this.facingRight = (dx >= 0);
         }
 
@@ -389,7 +390,6 @@ export class Enemy extends Entity {
         ctx.save();
         ctx.translate(screenX, screenY + bobY);
 
-        // Correct Head-First Alignment for Viper Serpent & Flipping Mobs
         if (this.type === 'snake') {
             ctx.rotate(this.angle + Math.PI / 2);
         } else if (['goblin', 'bear', 'ghost', 'fox_demon', 'cultist_sorcerer', 'stone_golem', 'spider_fiend', 'frost_dragon'].includes(this.type)) {
