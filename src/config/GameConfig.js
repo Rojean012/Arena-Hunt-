@@ -127,7 +127,7 @@ export const GameConfig = {
             description: 'Spins sharp Jiuyou energy blades around Wang Lin, slicing through nearby monsters.',
             baseDamage: 18,
             cooldown: 0,
-            count: 2,
+            count: 1, // Default 1 sword!
             radius: 80,
             spinSpeed: 0.04
         },

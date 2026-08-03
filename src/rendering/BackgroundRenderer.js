@@ -36,23 +36,7 @@ export class BackgroundRenderer {
             }
         }
 
-        // 3. Central Martial Arena Qi Emblem Ring (World Center 0, 0)
-        const centerScreenX = camera.getScreenX(0, cw);
-        const centerScreenY = camera.getScreenY(0, ch);
-
-        ctx.strokeStyle = 'rgba(234, 179, 8, 0.25)';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(centerScreenX, centerScreenY, 320, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.20)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(centerScreenX, centerScreenY, 280, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // 4. Subtle Radial Vignette Shadow Focus
+        // 3. Subtle Radial Vignette Shadow Focus
         const r0 = Math.max(1, ch * 0.45);
         const r1 = Math.max(r0 + 10, ch * 0.95);
 

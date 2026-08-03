@@ -35,7 +35,7 @@ function loadWeaponImage(id, src) {
                 const diff = Math.max(dr, Math.max(dg, db));
 
                 if ((r > 235 && g > 235 && b > 235) || (r < 25 && g < 25 && b < 25) || diff < 28) {
-                    data[i + 3] = 0; // Transparent background
+                    data[i + 3] = 0;
                 }
             }
 
@@ -99,20 +99,17 @@ export class WeaponManager {
             w.config.baseDamage += 8;
             w.config.spinSpeed += 0.005;
         } else if (weaponId === 'fireball') {
-            if (w.level % 3 === 0) w.config.count++;
             w.config.baseDamage += 15;
-            w.config.cooldown = Math.max(15, w.config.cooldown - 4);
+            w.config.cooldown = Math.max(25, w.config.cooldown - 5);
         } else if (weaponId === 'lightning') {
-            w.config.count++;
-            w.config.baseDamage += 18;
-            w.config.cooldown = Math.max(25, w.config.cooldown - 4);
+            w.config.baseDamage += 20;
+            w.config.count = Math.min(6, Math.floor(1 + w.level / 2));
         } else if (weaponId === 'flameAura') {
-            w.config.radius += 14;
             w.config.baseDamage += 6;
+            w.config.radius += 12;
         } else if (weaponId === 'boomerang') {
-            if (w.level % 2 === 0) w.config.count++;
-            w.config.baseDamage += 14;
-            w.config.cooldown = Math.max(25, w.config.cooldown - 3);
+            w.config.baseDamage += 10;
+            w.config.count = Math.min(4, Math.floor(1 + w.level / 3));
         }
     }
 
@@ -121,7 +118,9 @@ export class WeaponManager {
     }
 
     update(player, enemies, particles, onEnemyDefeated) {
-        // 1. Orbiting Jiuyou Swords
+        if (!player) return;
+
+        // 1. Orbiting Spirit Swords
         if (this.weapons['swords']) {
             const w = this.weapons['swords'];
             w.angleOffset += w.config.spinSpeed;
@@ -134,7 +133,7 @@ export class WeaponManager {
                 const sx = player.x + Math.cos(angle) * radius;
                 const sy = player.y + Math.sin(angle) * radius;
 
-                if (Math.random() < 0.35) {
+                if (Math.random() < 0.3 && particles) {
                     particles.spawnSwordSparkle(sx, sy);
                 }
 
@@ -142,7 +141,6 @@ export class WeaponManager {
                     if (enemy.dead) return;
                     if (Math.hypot(enemy.x - sx, enemy.y - sy) < enemy.radius + 22) {
                         const killed = enemy.takeDamage(w.config.baseDamage * 0.12);
-                        particles.spawnBlood(enemy.x, enemy.y, 2);
                         if (killed && onEnemyDefeated) {
                             onEnemyDefeated(enemy);
                         }
@@ -151,47 +149,27 @@ export class WeaponManager {
             }
         }
 
-        // 2. Rotating Flame Ring (No red background! Swirling fire particles!)
-        if (this.weapons['flameAura']) {
-            const w = this.weapons['flameAura'];
-            w.cooldownTimer++;
-            this.flameRotationAngle += 0.03; // Smooth rotation
-
-            // Spawn ambient fire embers along the rotating ring perimeter
-            for (let k = 0; k < 2; k++) {
-                const fa = this.flameRotationAngle + (Math.random() * Math.PI * 2);
-                const fx = player.x + Math.cos(fa) * w.config.radius;
-                const fy = player.y + Math.sin(fa) * w.config.radius;
-                particles.spawnFlameEmbers(fx, fy);
-            }
-
-            if (w.cooldownTimer >= 8) {
-                w.cooldownTimer = 0;
-                enemies.forEach(enemy => {
-                    if (enemy.dead) return;
-                    if (Math.hypot(enemy.x - player.x, enemy.y - player.y) < w.config.radius + enemy.radius) {
-                        const killed = enemy.takeDamage(w.config.baseDamage * 0.5);
-                        particles.spawnBlood(enemy.x, enemy.y, 2);
-                        if (killed && onEnemyDefeated) {
-                            onEnemyDefeated(enemy);
-                        }
-                    }
-                });
-            }
-        }
-
-        // 3. Arcane Fireball
+        // 2. Arcane Fireballs
         if (this.weapons['fireball']) {
             const w = this.weapons['fireball'];
             w.cooldownTimer++;
+
             if (w.cooldownTimer >= w.config.cooldown) {
                 w.cooldownTimer = 0;
-                const target = this.findClosestEnemy(player, enemies, 500);
-                if (target) {
-                    if (soundManager && soundManager.playShoot) {
-                        soundManager.playShoot();
+                let nearest = null;
+                let minDist = 450;
+
+                enemies.forEach(enemy => {
+                    if (enemy.dead) return;
+                    const d = Math.hypot(enemy.x - player.x, enemy.y - player.y);
+                    if (d < minDist) {
+                        minDist = d;
+                        nearest = enemy;
                     }
-                    const angle = Math.atan2(target.y - player.y, target.x - player.x);
+                });
+
+                if (nearest) {
+                    const angle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
                     this.projectiles.push({
                         type: 'fireball',
                         x: player.x,
@@ -199,185 +177,206 @@ export class WeaponManager {
                         vx: Math.cos(angle) * w.config.speed,
                         vy: Math.sin(angle) * w.config.speed,
                         damage: w.config.baseDamage,
-                        radius: 16,
-                        life: 120,
-                        dead: false
+                        splashRadius: w.config.splashRadius,
+                        radius: 14,
+                        life: 120
                     });
+
+                    if (soundManager && soundManager.playShoot) soundManager.playShoot();
                 }
             }
         }
 
-        // 4. Flying Boomerang
-        if (this.weapons['boomerang']) {
-            const w = this.weapons['boomerang'];
+        // 3. Thunder Bolt Strikes
+        if (this.weapons['lightning']) {
+            const w = this.weapons['lightning'];
+            w.cooldownTimer++;
+
+            if (w.cooldownTimer >= w.config.cooldown) {
+                w.cooldownTimer = 0;
+                const inRange = enemies.filter(e => !e.dead && Math.hypot(e.x - player.x, e.y - player.y) < w.config.range);
+
+                if (inRange.length > 0) {
+                    const targets = inRange.sort(() => Math.random() - 0.5).slice(0, w.config.count);
+                    targets.forEach(t => {
+                        this.effects.push({
+                            type: 'lightning',
+                            x: t.x,
+                            y: t.y,
+                            timer: 16
+                        });
+
+                        if (particles) particles.spawnThunderSparks(t.x, t.y);
+
+                        const killed = t.takeDamage(w.config.baseDamage);
+                        if (killed && onEnemyDefeated) onEnemyDefeated(t);
+                    });
+
+                    if (soundManager && soundManager.playShoot) soundManager.playShoot();
+                }
+            }
+        }
+
+        // 4. Rotating Flame Ring
+        if (this.weapons['flameAura']) {
+            const w = this.weapons['flameAura'];
+            this.flameRotationAngle += 0.05;
+
             w.cooldownTimer++;
             if (w.cooldownTimer >= w.config.cooldown) {
                 w.cooldownTimer = 0;
-                const target = this.findClosestEnemy(player, enemies, 450);
-                const angle = target ? Math.atan2(target.y - player.y, target.x - player.x) : Math.random() * Math.PI * 2;
-                
+                const radius = w.config.radius;
+
+                if (particles) {
+                    for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+                        particles.spawnFlameEmbers(player.x + Math.cos(a) * radius, player.y + Math.sin(a) * radius);
+                    }
+                }
+
+                enemies.forEach(enemy => {
+                    if (enemy.dead) return;
+                    if (Math.hypot(enemy.x - player.x, enemy.y - player.y) < radius + enemy.radius) {
+                        const killed = enemy.takeDamage(w.config.baseDamage);
+                        if (killed && onEnemyDefeated) onEnemyDefeated(enemy);
+                    }
+                });
+            }
+        }
+
+        // 5. Flying Boomerang
+        if (this.weapons['boomerang']) {
+            const w = this.weapons['boomerang'];
+            w.cooldownTimer++;
+
+            if (w.cooldownTimer >= w.config.cooldown) {
+                w.cooldownTimer = 0;
+                const angle = Math.random() * Math.PI * 2;
                 this.projectiles.push({
                     type: 'boomerang',
                     x: player.x,
                     y: player.y,
-                    startX: player.x,
-                    startY: player.y,
                     vx: Math.cos(angle) * w.config.speed,
                     vy: Math.sin(angle) * w.config.speed,
+                    startX: player.x,
+                    startY: player.y,
                     damage: w.config.baseDamage,
-                    radius: 18,
-                    spinAngle: 0,
+                    radius: 12,
                     returning: false,
-                    life: 120,
-                    dead: false
+                    spinAngle: 0,
+                    life: 180
                 });
+
+                if (soundManager && soundManager.playShoot) soundManager.playShoot();
             }
         }
 
-        // 5. Furious Thunder Dragon Strikes
-        if (this.weapons['lightning']) {
-            const w = this.weapons['lightning'];
-            w.cooldownTimer++;
-            if (w.cooldownTimer >= 35) {
-                w.cooldownTimer = 0;
-                const targets = this.findRandomEnemies(player, enemies, w.config.count, w.config.range);
-                targets.forEach(target => {
-                    const killed = target.takeDamage(w.config.baseDamage);
-                    particles.spawnMuzzleFlash(target.x, target.y, 0);
-                    if (soundManager && soundManager.playShoot) soundManager.playShoot();
+        // 6. Update Flying Projectiles
+        this.updateProjectiles(player, enemies, particles, onEnemyDefeated);
+    }
 
-                    if (killed && onEnemyDefeated) {
-                        onEnemyDefeated(target);
-                    }
-                    this.effects.push({
-                        type: 'lightning',
-                        x: target.x,
-                        y: target.y,
-                        life: 16,
-                        dead: false
-                    });
-                });
-            }
-        }
-
-        // Update Projectiles (Fireballs & Boomerangs)
+    updateProjectiles(player, enemies, particles, onEnemyDefeated) {
         this.projectiles.forEach(p => {
+            p.life--;
             if (p.type === 'boomerang') {
-                p.spinAngle += 0.28;
-                particles.spawnStardust(p.x, p.y);
+                p.spinAngle += 0.25;
 
                 if (!p.returning) {
                     p.x += p.vx;
                     p.y += p.vy;
-                    if (Math.hypot(p.x - p.startX, p.y - p.startY) > 290) {
+                    if (Math.hypot(p.x - p.startX, p.y - p.startY) > 320 || p.life < 100) {
                         p.returning = true;
                     }
                 } else {
-                    const angle = Math.atan2(player.y - p.y, player.x - p.x);
-                    const returnSpeed = (this.weapons['boomerang'] && this.weapons['boomerang'].config) 
-                        ? this.weapons['boomerang'].config.speed * 1.25 
-                        : 9.5;
-                    p.x += Math.cos(angle) * returnSpeed;
-                    p.y += Math.sin(angle) * returnSpeed;
-                    if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + 12) {
+                    const dx = player.x - p.x;
+                    const dy = player.y - p.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < 20) {
                         p.dead = true;
+                    } else {
+                        p.x += (dx / dist) * 9;
+                        p.y += (dy / dist) * 9;
                     }
                 }
+
+                enemies.forEach(enemy => {
+                    if (enemy.dead) return;
+                    if (Math.hypot(enemy.x - p.x, enemy.y - p.y) < enemy.radius + p.radius) {
+                        const killed = enemy.takeDamage(p.damage);
+                        if (killed && onEnemyDefeated) onEnemyDefeated(enemy);
+                        if (particles) particles.spawnSwordSparkle(p.x, p.y);
+                    }
+                });
             } else if (p.type === 'fireball') {
                 p.x += p.vx;
                 p.y += p.vy;
-                if (Math.random() < 0.5) {
-                    particles.spawnFlameEmbers(p.x, p.y);
+
+                let hit = false;
+                enemies.forEach(enemy => {
+                    if (enemy.dead || hit) return;
+                    if (Math.hypot(enemy.x - p.x, enemy.y - p.y) < enemy.radius + p.radius) {
+                        hit = true;
+                    }
+                });
+
+                if (hit || p.life <= 0) {
+                    p.dead = true;
+                    if (particles) particles.spawnExplosion(p.x, p.y);
+
+                    enemies.forEach(enemy => {
+                        if (enemy.dead) return;
+                        if (Math.hypot(enemy.x - p.x, enemy.y - p.y) < p.splashRadius + enemy.radius) {
+                            const killed = enemy.takeDamage(p.damage);
+                            if (killed && onEnemyDefeated) onEnemyDefeated(enemy);
+                        }
+                    });
                 }
             }
-
-            p.life--;
-            if (p.life <= 0) p.dead = true;
-
-            enemies.forEach(enemy => {
-                if (enemy.dead || p.dead) return;
-                if (Math.hypot(enemy.x - p.x, enemy.y - p.y) < enemy.radius + p.radius) {
-                    const killed = enemy.takeDamage(p.damage);
-                    if (p.type === 'fireball') {
-                        p.dead = true;
-                        particles.spawnExplosion(p.x, p.y);
-                    }
-                    particles.spawnBlood(enemy.x, enemy.y, 8);
-                    if (killed && onEnemyDefeated) {
-                        onEnemyDefeated(enemy);
-                    }
-                }
-            });
         });
 
-        this.projectiles = this.projectiles.filter(p => !p.dead);
-        
+        this.projectiles = this.projectiles.filter(p => !p.dead && p.life > 0);
+
         this.effects.forEach(e => {
-            e.life--;
-            if (e.life <= 0) e.dead = true;
+            e.timer--;
         });
-        this.effects = this.effects.filter(e => !e.dead);
-    }
-
-    findClosestEnemy(player, enemies, maxRange) {
-        let closest = null;
-        let minDist = maxRange;
-        enemies.forEach(enemy => {
-            if (enemy.dead) return;
-            const dist = Math.hypot(enemy.x - player.x, enemy.y - player.y);
-            if (dist < minDist) {
-                minDist = dist;
-                closest = enemy;
-            }
-        });
-        return closest;
-    }
-
-    findRandomEnemies(player, enemies, count, maxRange) {
-        const inRange = enemies.filter(e => !e.dead && Math.hypot(e.x - player.x, e.y - player.y) <= maxRange);
-        if (inRange.length === 0) return [];
-        const shuffled = [...inRange].sort(() => Math.random() - 0.5);
-        return shuffled.slice(0, count);
+        this.effects = this.effects.filter(e => e.timer > 0);
     }
 
     render(ctx, camera, player, canvasWidth, canvasHeight) {
+        if (!player) return;
+
         const px = camera.getScreenX(player.x, canvasWidth);
         const py = camera.getScreenY(player.y, canvasHeight);
 
-        // 1. Rotating Flame Ring (No red background! Swirling 2D Fire Ring Image Asset!)
+        // 1. Rotating Flame Ring
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
-            ctx.save();
-
             const auraImg = weaponImages['flameAura'];
+            const radius = w.config.radius;
+            const dSize = radius * 2.4;
+
+            ctx.save();
+            ctx.translate(px, py);
+            ctx.rotate(this.flameRotationAngle);
+
             if (auraImg && (auraImg.complete || auraImg.width)) {
-                ctx.save();
-                ctx.translate(px, py);
-                ctx.rotate(this.flameRotationAngle);
-                ctx.shadowColor = '#f97316';
-                ctx.shadowBlur = 18;
-                const dSize = w.config.radius * 2.2;
                 ctx.drawImage(auraImg, -dSize / 2, -dSize / 2, dSize, dSize);
-                ctx.restore();
+            } else {
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                ctx.stroke();
             }
 
             ctx.restore();
         }
 
-        // 2. Orbiting Jiuyou Spirit Swords with 2D Image Icon Asset
+        // 2. Orbiting Jiuyou Spirit Swords (WITHOUT RING LINE!)
         if (this.weapons['swords']) {
             const w = this.weapons['swords'];
             const swordCount = w.config.count;
             const radius = w.config.radius;
             const swordImg = weaponImages['swords'];
-
-            ctx.save();
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(px, py, radius, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.restore();
 
             for (let i = 0; i < swordCount; i++) {
                 const angle = w.angleOffset + (i * Math.PI * 2) / swordCount;
@@ -449,31 +448,23 @@ export class WeaponManager {
             if (e.type === 'lightning') {
                 const sx = camera.getScreenX(e.x, canvasWidth);
                 const sy = camera.getScreenY(e.y, canvasHeight);
-                const thunderImg = weaponImages['lightning'];
 
                 ctx.save();
-                ctx.shadowColor = 'rgba(250, 204, 21, 0.95)';
+                ctx.strokeStyle = '#fef08a';
+                ctx.shadowColor = '#eab308';
                 ctx.shadowBlur = 24;
+                ctx.lineWidth = 4;
 
-                // Blinding Electric Strike Paths
-                ctx.strokeStyle = '#facc15';
-                ctx.lineWidth = 6;
                 ctx.beginPath();
-                ctx.moveTo(sx, sy - 220);
-                ctx.lineTo(sx - 20, sy - 140);
-                ctx.lineTo(sx + 20, sy - 70);
-                ctx.lineTo(sx - 8, sy - 25);
+                ctx.moveTo(sx + (Math.random() - 0.5) * 30, sy - 300);
+                ctx.lineTo(sx + (Math.random() - 0.5) * 20, sy - 150);
                 ctx.lineTo(sx, sy);
                 ctx.stroke();
 
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 3;
-                ctx.stroke();
-
-                // 2D Furious Thunder Image Icon Burst
-                if (thunderImg && (thunderImg.complete || thunderImg.width)) {
-                    ctx.drawImage(thunderImg, sx - 35, sy - 35, 70, 70);
-                }
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(sx, sy, 20 * (e.timer / 16), 0, Math.PI * 2);
+                ctx.fill();
 
                 ctx.restore();
             }

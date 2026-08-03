@@ -82,7 +82,7 @@ export class GameScene {
     }
 
     enter() {
-        this.player.reset(0, 0); // Reset player to center (0, 0)
+        this.player.reset(0, 0);
         this.camera.x = 0;
         this.camera.y = 0;
         this.spawner.reset();
@@ -103,7 +103,7 @@ export class GameScene {
     update() {
         if (this.isGameOver) return;
 
-        // Upgrade Modal Pause Gate
+        // Upgrade Modal Pause Gate & Freeze Game World
         if (this.levelManager.isLevelingUp) {
             this.upgradeModal.update(
                 this.levelManager,
@@ -119,11 +119,11 @@ export class GameScene {
         if (input.keys['p'] || input.keys['escape']) {
             input.keys['p'] = false;
             input.keys['escape'] = false;
-            this.sceneManager.push('pause');
+            this.sceneManager.switchScene('pause');
             return;
         }
 
-        // 1. Player Movement & Camera Tracking
+        // 1. Player Movement & Direct Camera Tracking
         const movement = input.getMovementVector();
         this.player.update(movement, this.spawner.bounds);
         this.camera.update(this.player.x, this.player.y);
@@ -150,7 +150,7 @@ export class GameScene {
         // 6. Particle System Update
         this.particles.update();
 
-        // 7. Collisions & Pickups
+        // 7. Collisions & Pickups (Increment HUD Gem Count & Coin Count!)
         this.collision.update(
             this.player,
             this.spawner.enemies,
@@ -159,9 +159,12 @@ export class GameScene {
             this.enemyProjectiles,
             this.particles,
             (xpAmount) => {
+                this.levelManager.totalGems += xpAmount;
+                this.score += xpAmount * 10;
                 const leveledUp = this.player.addXP(xpAmount);
                 if (leveledUp) {
                     this.levelManager.triggerLevelUp(this.player, this.weaponManager);
+                    if (input.consumeClick) input.consumeClick();
                 }
             },
             (coinAmount) => {
@@ -221,7 +224,7 @@ export class GameScene {
             soundManager.playGameOver();
         }
 
-        this.sceneManager.change('gameOver', {
+        this.sceneManager.switchScene('gameOver', {
             score: this.score,
             enemiesDefeated: this.enemiesDefeated,
             coinsCollected: this.player.coins,
