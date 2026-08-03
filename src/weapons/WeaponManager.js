@@ -10,14 +10,14 @@ function loadWeaponImage(id, src) {
     img.onload = () => {
         try {
             const canvas = document.createElement('canvas');
-            canvas.width = 128;
-            canvas.height = 128;
+            canvas.width = 256;
+            canvas.height = 256;
             const ctx = canvas.getContext('2d');
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, 128, 128);
+            ctx.drawImage(img, 0, 0, 256, 256);
 
-            const imgData = ctx.getImageData(0, 0, 128, 128);
+            const imgData = ctx.getImageData(0, 0, 256, 256);
             const data = imgData.data;
 
             const bgR = data[0];
@@ -32,9 +32,10 @@ function loadWeaponImage(id, src) {
                 const dr = Math.abs(r - bgR);
                 const dg = Math.abs(g - bgG);
                 const db = Math.abs(b - bgB);
+                const diff = Math.max(dr, Math.max(dg, db));
 
-                if ((dr < 30 && dg < 30 && db < 30) || (r < 25 && g < 25 && b < 25)) {
-                    data[i + 3] = 0;
+                if ((r > 235 && g > 235 && b > 235) || (r < 25 && g < 25 && b < 25) || diff < 28) {
+                    data[i + 3] = 0; // Transparent background
                 }
             }
 
@@ -57,6 +58,7 @@ export class WeaponManager {
         this.weapons = {};
         this.projectiles = [];
         this.effects = [];
+        this.flameRotationAngle = 0;
         
         this.addWeapon('swords');
     }
@@ -65,6 +67,7 @@ export class WeaponManager {
         this.weapons = {};
         this.projectiles = [];
         this.effects = [];
+        this.flameRotationAngle = 0;
         this.addWeapon('swords');
     }
 
@@ -102,9 +105,9 @@ export class WeaponManager {
         } else if (weaponId === 'lightning') {
             w.config.count++;
             w.config.baseDamage += 18;
-            w.config.cooldown = Math.max(30, w.config.cooldown - 5);
+            w.config.cooldown = Math.max(25, w.config.cooldown - 4);
         } else if (weaponId === 'flameAura') {
-            w.config.radius += 12;
+            w.config.radius += 14;
             w.config.baseDamage += 6;
         } else if (weaponId === 'boomerang') {
             if (w.level % 2 === 0) w.config.count++;
@@ -131,7 +134,7 @@ export class WeaponManager {
                 const sx = player.x + Math.cos(angle) * radius;
                 const sy = player.y + Math.sin(angle) * radius;
 
-                if (Math.random() < 0.3) {
+                if (Math.random() < 0.35) {
                     particles.spawnSwordSparkle(sx, sy);
                 }
 
@@ -148,19 +151,21 @@ export class WeaponManager {
             }
         }
 
-        // 2. Flame Aura Ring (Continuous 8-frame burn tick!)
+        // 2. Rotating Flame Ring (No red background! Swirling fire particles!)
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
             w.cooldownTimer++;
+            this.flameRotationAngle += 0.03; // Smooth rotation
 
-            if (Math.random() < 0.4) {
-                const fa = Math.random() * Math.PI * 2;
-                const fx = player.x + Math.cos(fa) * (w.config.radius * Math.random());
-                const fy = player.y + Math.sin(fa) * (w.config.radius * Math.random());
+            // Spawn ambient fire embers along the rotating ring perimeter
+            for (let k = 0; k < 2; k++) {
+                const fa = this.flameRotationAngle + (Math.random() * Math.PI * 2);
+                const fx = player.x + Math.cos(fa) * w.config.radius;
+                const fy = player.y + Math.sin(fa) * w.config.radius;
                 particles.spawnFlameEmbers(fx, fy);
             }
 
-            if (w.cooldownTimer >= 8) { // Fast continuous 8-frame damage ticks
+            if (w.cooldownTimer >= 8) {
                 w.cooldownTimer = 0;
                 enemies.forEach(enemy => {
                     if (enemy.dead) return;
@@ -229,11 +234,11 @@ export class WeaponManager {
             }
         }
 
-        // 5. Thunder Bolt (High Frequency 45-frame strikes!)
+        // 5. Furious Thunder Dragon Strikes
         if (this.weapons['lightning']) {
             const w = this.weapons['lightning'];
             w.cooldownTimer++;
-            if (w.cooldownTimer >= 45) { // Rapid 45-frame strikes
+            if (w.cooldownTimer >= 35) {
                 w.cooldownTimer = 0;
                 const targets = this.findRandomEnemies(player, enemies, w.config.count, w.config.range);
                 targets.forEach(target => {
@@ -248,7 +253,7 @@ export class WeaponManager {
                         type: 'lightning',
                         x: target.x,
                         y: target.y,
-                        life: 14,
+                        life: 16,
                         dead: false
                     });
                 });
@@ -339,33 +344,20 @@ export class WeaponManager {
         const px = camera.getScreenX(player.x, canvasWidth);
         const py = camera.getScreenY(player.y, canvasHeight);
 
-        // 1. High-Impact Flame Aura Ring Rendering
+        // 1. Rotating Flame Ring (No red background! Swirling 2D Fire Ring Image Asset!)
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
             ctx.save();
 
-            const auraGrad = ctx.createRadialGradient(px, py, w.config.radius * 0.4, px, py, w.config.radius);
-            auraGrad.addColorStop(0, 'rgba(239, 68, 68, 0.08)');
-            auraGrad.addColorStop(0.7, 'rgba(249, 115, 22, 0.35)');
-            auraGrad.addColorStop(1, 'rgba(239, 68, 68, 0.55)');
-
-            ctx.beginPath();
-            ctx.arc(px, py, w.config.radius, 0, Math.PI * 2);
-            ctx.fillStyle = auraGrad;
-            ctx.fill();
-
-            ctx.strokeStyle = '#f97316';
-            ctx.lineWidth = 3.5;
-            ctx.stroke();
-
             const auraImg = weaponImages['flameAura'];
             if (auraImg && (auraImg.complete || auraImg.width)) {
                 ctx.save();
-                ctx.globalAlpha = 0.50;
-                ctx.beginPath();
-                ctx.arc(px, py, w.config.radius * 0.75, 0, Math.PI * 2);
-                ctx.clip();
-                ctx.drawImage(auraImg, px - w.config.radius * 0.75, py - w.config.radius * 0.75, w.config.radius * 1.5, w.config.radius * 1.5);
+                ctx.translate(px, py);
+                ctx.rotate(this.flameRotationAngle);
+                ctx.shadowColor = '#f97316';
+                ctx.shadowBlur = 18;
+                const dSize = w.config.radius * 2.2;
+                ctx.drawImage(auraImg, -dSize / 2, -dSize / 2, dSize, dSize);
                 ctx.restore();
             }
 
@@ -380,7 +372,7 @@ export class WeaponManager {
             const swordImg = weaponImages['swords'];
 
             ctx.save();
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(px, py, radius, 0, Math.PI * 2);
@@ -398,8 +390,8 @@ export class WeaponManager {
 
                 if (swordImg && (swordImg.complete || swordImg.width)) {
                     ctx.shadowColor = 'rgba(56, 189, 248, 0.8)';
-                    ctx.shadowBlur = 10;
-                    ctx.drawImage(swordImg, -20, -28, 40, 56);
+                    ctx.shadowBlur = 12;
+                    ctx.drawImage(swordImg, -22, -30, 44, 60);
                 } else {
                     ctx.fillStyle = '#0284c7';
                     ctx.fillRect(-4, -24, 8, 30);
@@ -423,8 +415,8 @@ export class WeaponManager {
 
             if (p.type === 'boomerang') {
                 ctx.rotate(p.spinAngle);
-                ctx.shadowColor = 'rgba(0, 255, 255, 0.8)';
-                ctx.shadowBlur = 14;
+                ctx.shadowColor = 'rgba(0, 255, 255, 0.9)';
+                ctx.shadowBlur = 16;
 
                 if (pImg && (pImg.complete || pImg.width)) {
                     ctx.drawImage(pImg, -p.radius * 1.3, -p.radius * 1.3, p.radius * 2.6, p.radius * 2.6);
@@ -436,8 +428,8 @@ export class WeaponManager {
                     ctx.stroke();
                 }
             } else if (p.type === 'fireball') {
-                ctx.shadowColor = 'rgba(249, 115, 22, 0.9)';
-                ctx.shadowBlur = 16;
+                ctx.shadowColor = 'rgba(249, 115, 22, 0.95)';
+                ctx.shadowBlur = 18;
 
                 if (pImg && (pImg.complete || pImg.width)) {
                     ctx.drawImage(pImg, -p.radius * 1.4, -p.radius * 1.4, p.radius * 2.8, p.radius * 2.8);
@@ -452,7 +444,7 @@ export class WeaponManager {
             ctx.restore();
         });
 
-        // 4. High-Impact Thunder Bolt Lightning Strikes
+        // 4. Furious Thunder Dragon Strikes
         this.effects.forEach(e => {
             if (e.type === 'lightning') {
                 const sx = camera.getScreenX(e.x, canvasWidth);
@@ -461,24 +453,26 @@ export class WeaponManager {
 
                 ctx.save();
                 ctx.shadowColor = 'rgba(250, 204, 21, 0.95)';
-                ctx.shadowBlur = 22;
+                ctx.shadowBlur = 24;
 
+                // Blinding Electric Strike Paths
                 ctx.strokeStyle = '#facc15';
-                ctx.lineWidth = 5;
+                ctx.lineWidth = 6;
                 ctx.beginPath();
-                ctx.moveTo(sx, sy - 190);
-                ctx.lineTo(sx - 18, sy - 130);
-                ctx.lineTo(sx + 18, sy - 65);
-                ctx.lineTo(sx - 6, sy - 20);
+                ctx.moveTo(sx, sy - 220);
+                ctx.lineTo(sx - 20, sy - 140);
+                ctx.lineTo(sx + 20, sy - 70);
+                ctx.lineTo(sx - 8, sy - 25);
                 ctx.lineTo(sx, sy);
                 ctx.stroke();
 
                 ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2.5;
+                ctx.lineWidth = 3;
                 ctx.stroke();
 
+                // 2D Furious Thunder Image Icon Burst
                 if (thunderImg && (thunderImg.complete || thunderImg.width)) {
-                    ctx.drawImage(thunderImg, sx - 28, sy - 28, 56, 56);
+                    ctx.drawImage(thunderImg, sx - 35, sy - 35, 70, 70);
                 }
 
                 ctx.restore();
