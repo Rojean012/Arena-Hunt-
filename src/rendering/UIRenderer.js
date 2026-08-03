@@ -1,8 +1,8 @@
 import { GameConfig } from '../config/GameConfig.js';
 
-// Preload Wave Warning Banner V2 2D Image Asset
+// Preload Wave Warning Banner V3 2D Image Asset
 const waveBannerImage = new Image();
-waveBannerImage.src = '/assets/images/wave_banner_v2.jpg';
+waveBannerImage.src = '/assets/images/wave_banner_v3.jpg';
 
 export class UIRenderer {
     renderHUD(ctx, player, score, coins, highScore, waveTier, levelManager, weaponManager, spawner, canvasWidth, canvasHeight) {
@@ -74,12 +74,12 @@ export class UIRenderer {
             slotX += 38;
         });
 
-        // 4. SLEEK DARK XIANXIA WAVE SIGNALING IMAGE BANNER
+        // 4. PROMINENT PROPORTIONAL WAVE SIGNALING BANNER V3
         if (spawner && spawner.waveNoticeTimer > 0) {
-            const bannerW = 640;
-            const bannerH = 100;
+            const bannerW = 680;
+            const bannerH = 110;
             const bannerX = (canvasWidth - bannerW) / 2;
-            const bannerY = canvasHeight * 0.22;
+            const bannerY = canvasHeight * 0.20;
 
             const alpha = Math.min(1, spawner.waveNoticeTimer / 30);
 
@@ -88,7 +88,7 @@ export class UIRenderer {
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
 
-            // Draw High-Res 2D Wave Banner V2 Frame
+            // Draw Aspect-Preserved 2D Wave Banner V3 Plaque
             if (waveBannerImage.complete && waveBannerImage.naturalWidth !== 0) {
                 ctx.drawImage(waveBannerImage, bannerX, bannerY, bannerW, bannerH);
             } else {
@@ -104,7 +104,7 @@ export class UIRenderer {
             ctx.textAlign = 'center';
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 24px Arial';
-            ctx.fillText(spawner.waveNoticeText, canvasWidth / 2, bannerY + 58);
+            ctx.fillText(spawner.waveNoticeText, canvasWidth / 2, bannerY + 62);
 
             ctx.restore();
         }

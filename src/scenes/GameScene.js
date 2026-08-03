@@ -28,6 +28,7 @@ export class GameScene {
 
         this.player = null;
         this.enemies = [];
+        this.pendingEnemies = []; // Buffer to prevent array mutation during forEach iteration!
         this.gems = [];
         this.coins = [];
         this.enemyProjectiles = [];
@@ -38,6 +39,7 @@ export class GameScene {
     enter() {
         this.player = new Player(0, 0);
         this.enemies = [];
+        this.pendingEnemies = [];
         this.gems = [];
         this.coins = [];
         this.enemyProjectiles = [];
@@ -58,22 +60,20 @@ export class GameScene {
 
         this.particles.spawnBlood(enemy.x, enemy.y, 14);
 
-        // Slime split mechanic
+        // Slime split mechanic: Push miniSlimes into pendingEnemies to PREVENT array iteration freezes!
         if (enemy.type === 'slime') {
-            this.enemies.push(new Enemy(enemy.x - 10, enemy.y - 10, 'miniSlime'));
-            this.enemies.push(new Enemy(enemy.x + 10, enemy.y + 10, 'miniSlime'));
+            this.pendingEnemies.push(new Enemy(enemy.x - 12, enemy.y - 12, 'miniSlime'));
+            this.pendingEnemies.push(new Enemy(enemy.x + 12, enemy.y + 12, 'miniSlime'));
         }
 
-        // EXACT GEM DROP RULES: Standard Enemy = 1 Gem; Boss Enemy = 5 Gems!
+        // Standard Enemy = 1 Gem; Boss Enemy = 5 Gems!
         if (enemy.type === 'bear') {
-            // Boss drops 5 Emerald Gems!
             for (let i = 0; i < 5; i++) {
                 const offsetX = (Math.random() - 0.5) * 40;
                 const offsetY = (Math.random() - 0.5) * 40;
                 this.gems.push(new Gem(enemy.x + offsetX, enemy.y + offsetY, 'emerald'));
             }
         } else {
-            // Standard enemy drops 1 Emerald Gem!
             this.gems.push(new Gem(enemy.x, enemy.y, 'emerald'));
         }
 
@@ -150,8 +150,13 @@ export class GameScene {
             this.camera
         );
 
-        // 8. Cleanup dead entities
+        // 8. Safe Cleanup & Flush Pending Split Enemies (Zero Freezes!)
         this.enemies = this.enemies.filter(e => !e.dead);
+        if (this.pendingEnemies.length > 0) {
+            this.enemies.push(...this.pendingEnemies);
+            this.pendingEnemies = [];
+        }
+
         this.gems = this.gems.filter(g => !g.dead);
         this.coins = this.coins.filter(c => !c.dead);
         this.enemyProjectiles = this.enemyProjectiles.filter(p => !p.dead);
