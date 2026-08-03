@@ -29,6 +29,15 @@ export class CardUpgradeModal {
     update(levelManager, weaponManager, player, canvasWidth, canvasHeight) {
         if (!levelManager || !levelManager.isLevelingUp) return;
 
+        // If modal just opened, flush pre-existing mouse down / click flags so cards don't close instantly!
+        if (levelManager.justOpened) {
+            levelManager.justOpened = false;
+            input.clearJustPressed();
+            input.mouse.isDown = false;
+            input.mouse.clickPending = false;
+            return;
+        }
+
         const options = levelManager.currentOptions || levelManager.cardOptions;
         if (!options || options.length === 0) return;
 
@@ -39,7 +48,6 @@ export class CardUpgradeModal {
         const cardH = 330;
         const totalW = options.length * cardW + (options.length - 1) * 30;
         
-        // Exact pixel alignment with render() canvasWidth and canvasHeight!
         const cw = canvasWidth || window.innerWidth;
         const ch = canvasHeight || window.innerHeight;
         const startX = (cw - totalW) / 2;
@@ -54,7 +62,7 @@ export class CardUpgradeModal {
             if (mouseX >= cx && mouseX <= cx + cardW && mouseY >= cy && mouseY <= cy + cardH) {
                 this.hoveredIndex = i;
                 
-                // Check clickPending || isJustPressed || isDown
+                // Only select card if player performs a FRESH click after modal opens!
                 if (input.mouse.clickPending || input.mouse.isJustPressed || input.mouse.isDown) {
                     input.clearJustPressed();
                     input.mouse.isDown = false;

@@ -7,6 +7,7 @@ export class LevelManager {
         this.currentTierIndex = 0;
         this.targetGems = GameConfig.upgradeThresholds[0];
         this.isLevelingUp = false;
+        this.justOpened = false;
         this.cardOptions = [];
     }
 
@@ -19,6 +20,7 @@ export class LevelManager {
         this.currentTierIndex = 0;
         this.targetGems = GameConfig.upgradeThresholds[0];
         this.isLevelingUp = false;
+        this.justOpened = false;
         this.cardOptions = [];
     }
 
@@ -34,6 +36,7 @@ export class LevelManager {
             }
             this.generateCardOptions(weaponManager);
             this.isLevelingUp = true;
+            this.justOpened = true; // Gate input on open frame
             return true;
         }
         return false;
@@ -137,6 +140,7 @@ export class LevelManager {
         }
 
         this.isLevelingUp = false;
+        this.justOpened = false;
         if (soundManager && soundManager.playButtonClick) {
             soundManager.playButtonClick();
         }

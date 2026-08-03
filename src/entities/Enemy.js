@@ -2,54 +2,13 @@ import { Entity } from './Entity.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { soundManager } from '../audio/SoundManager.js';
 
-// Preload Enemy 2D Asset Images with Chroma-Key Background Filters
-const enemySprites = {};
-
-function loadEnemySprite(type, src) {
-    const img = new Image();
-    img.src = src;
-    img.onload = () => {
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imgData.data;
-
-            // Key out white / light background pixels ONCE during load
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                if (r > 190 && g > 190 && b > 190) {
-                    data[i + 3] = 0;
-                }
-            }
-
-            ctx.putImageData(imgData, 0, 0);
-            enemySprites[type] = canvas;
-        } catch (e) {
-            enemySprites[type] = img;
-        }
-    };
-}
-
-loadEnemySprite('slime', '/assets/images/slime_enemy.jpg');
-loadEnemySprite('miniSlime', '/assets/images/slime_enemy.jpg');
-loadEnemySprite('goblin', '/assets/images/goblin_enemy.jpg');
-loadEnemySprite('ghost', '/assets/images/ghost_enemy.jpg');
-loadEnemySprite('bear', '/assets/images/orc_enemy.jpg');
-
 export class Enemy extends Entity {
     constructor(x, y, type = 'slime') {
         let spec = GameConfig.enemies[type];
         if (!spec) {
             spec = type === 'miniSlime' 
                 ? { radius: 11, speed: 1.4, health: 6, damage: 4, color: '#2ecc71', name: 'Mini Slime' }
-                : GameConfig.enemies.slime;
+                : (type === 'snake' ? { radius: 13, speed: 1.8, health: 12, damage: 8, color: '#a855f7', name: 'Viper Serpent' } : GameConfig.enemies.slime);
         }
 
         super(x, y, spec.radius, spec.color);
@@ -219,20 +178,140 @@ export class Enemy extends Entity {
         if (this.type === 'bear' && this.isCharging) {
             ctx.fillStyle = 'rgba(231, 76, 60, 0.4)';
             ctx.beginPath();
-            ctx.arc(0, 0, r + 12, 0, Math.PI * 2);
+            ctx.arc(0, 0, r + 14, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        // Render 2D Enemy Sprite Image Asset
-        const sprite = enemySprites[this.type];
-        if (sprite && (sprite.complete || sprite.width)) {
-            ctx.drawImage(sprite, -r * 1.3, -r * 1.3, r * 2.6, r * 2.6);
-        } else {
-            // Fallback rendering
-            ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : this.color;
+        // Render High-Quality 2D Procedural Artwork per Enemy Type
+        if (this.type === 'slime' || this.type === 'miniSlime') {
+            // 1. Cute Gel Slime
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : (this.type === 'miniSlime' ? '#2ecc71' : '#10b981');
+            ctx.fill();
+
+            // Inner Core
+            ctx.beginPath();
+            ctx.arc(-2, -2, r * 0.5, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.fill();
+
+            // Cute Eyes
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(-r * 0.3, -r * 0.1, r * 0.18, 0, Math.PI * 2);
+            ctx.arc(r * 0.3, -r * 0.1, r * 0.18, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (this.type === 'goblin') {
+            // 2. Goblin Archer Warrior
+            ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : '#15803d';
             ctx.beginPath();
             ctx.arc(0, 0, r, 0, Math.PI * 2);
             ctx.fill();
+
+            // Pointed Ears
+            ctx.fillStyle = '#166534';
+            ctx.beginPath();
+            ctx.moveTo(-r, -r * 0.3);
+            ctx.lineTo(-r * 1.5, -r * 0.8);
+            ctx.lineTo(-r * 0.7, 0);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(r, -r * 0.3);
+            ctx.lineTo(r * 1.5, -r * 0.8);
+            ctx.lineTo(r * 0.7, 0);
+            ctx.fill();
+
+            // Glowing Red Eyes & Leather Hood
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(-r * 0.3, -r * 0.2, 3, 0, Math.PI * 2);
+            ctx.arc(r * 0.3, -r * 0.2, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Wooden Bow
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(r * 0.6, 0, r * 0.7, -Math.PI * 0.4, Math.PI * 0.4);
+            ctx.stroke();
+        } else if (this.type === 'ghost') {
+            // 3. Ethereal Phantom Specter
+            ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : 'rgba(168, 85, 247, 0.85)';
+            ctx.beginPath();
+            ctx.arc(0, -2, r, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Spectral Tail Wisps
+            ctx.beginPath();
+            ctx.moveTo(-r, 0);
+            ctx.quadraticCurveTo(-r * 0.5, r * 1.4, 0, r * 0.8);
+            ctx.quadraticCurveTo(r * 0.5, r * 1.4, r, 0);
+            ctx.fill();
+
+            // Glowing Yellow Spectral Eyes
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.arc(-r * 0.35, -r * 0.3, 3.5, 0, Math.PI * 2);
+            ctx.arc(r * 0.35, -r * 0.3, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (this.type === 'bear') {
+            // 4. Orc Berserker Boss
+            ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : '#991b1b';
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Spiked Shoulders & Tusks
+            ctx.fillStyle = '#fef08a';
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.5, r * 0.2);
+            ctx.lineTo(-r * 0.7, -r * 0.4);
+            ctx.lineTo(-r * 0.2, 0);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(r * 0.5, r * 0.2);
+            ctx.lineTo(r * 0.7, -r * 0.4);
+            ctx.lineTo(r * 0.2, 0);
+            ctx.fill();
+
+            // Glowing Red Berserk Eyes
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.arc(-r * 0.3, -r * 0.2, 4, 0, Math.PI * 2);
+            ctx.arc(r * 0.3, -r * 0.2, 4, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (this.type === 'snake') {
+            // 5. Coiled Viper Serpent
+            ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : '#7e22ce';
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Serpent Scales Pattern
+            ctx.strokeStyle = '#a855f7';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.6, 0, Math.PI * 1.5);
+            ctx.stroke();
+
+            // Glowing Eyes & Split Tongue
+            ctx.fillStyle = '#facc15';
+            ctx.beginPath();
+            ctx.arc(-r * 0.3, -r * 0.2, 3, 0, Math.PI * 2);
+            ctx.arc(r * 0.3, -r * 0.2, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, r * 0.3);
+            ctx.lineTo(-3, r * 0.8);
+            ctx.moveTo(0, r * 0.3);
+            ctx.lineTo(3, r * 0.8);
+            ctx.stroke();
         }
 
         // Hit Flash Tint
