@@ -27,10 +27,12 @@ export class Enemy extends Entity {
 
         this.shootTimer = Math.random() * 60;
         this.flankAngle = Math.random() * Math.PI * 2;
+        this.hitFlash = 0;
     }
 
     update(playerX, playerY, projectiles) {
-        this.animTimer += 0.1;
+        this.animTimer += 0.12;
+        if (this.hitFlash > 0) this.hitFlash--;
 
         if (this.type === 'bear') {
             this.updateChargerAI(playerX, playerY);
@@ -96,7 +98,9 @@ export class Enemy extends Entity {
         if (this.shootTimer >= 100) {
             this.shootTimer = 0;
             if (projectiles && dist < 400) {
-                soundManager.playShoot();
+                if (soundManager && soundManager.playShoot) {
+                    soundManager.playShoot();
+                }
                 const angle = Math.atan2(dy, dx);
                 projectiles.push({
                     x: this.x,
@@ -143,7 +147,14 @@ export class Enemy extends Entity {
 
     takeDamage(amount) {
         this.health -= amount;
-        soundManager.playEnemyHit();
+        this.hitFlash = 6;
+
+        if (soundManager && soundManager.playEnemyHit) {
+            soundManager.playEnemyHit();
+        } else if (soundManager && soundManager.playHit) {
+            soundManager.playHit();
+        }
+
         if (this.health <= 0) {
             this.health = 0;
             return true;
@@ -154,8 +165,14 @@ export class Enemy extends Entity {
     render(ctx, screenX, screenY) {
         const r = this.radius;
 
+        // Monster Squish & Stretch Action Animation Transforms!
+        const squishX = 1.0 + Math.sin(this.animTimer * 2) * 0.08;
+        const squishY = 1.0 - Math.sin(this.animTimer * 2) * 0.08;
+        const bobY = Math.abs(Math.sin(this.animTimer * 3)) * -3;
+
         ctx.save();
-        ctx.translate(screenX, screenY);
+        ctx.translate(screenX, screenY + bobY);
+        ctx.scale(squishX, squishY);
 
         // Charger Red Telegraph Arc
         if (this.type === 'bear' && this.isCharging) {
@@ -165,17 +182,17 @@ export class Enemy extends Entity {
             ctx.fill();
         }
 
-        // Detailed Procedural Mutant Monster Drawing
+        // Detailed Procedural Mutant Monster Drawing with Hit Flash Reaction
         ctx.beginPath();
         ctx.arc(0, 0, r, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : this.color;
         ctx.fill();
         ctx.strokeStyle = '#111827';
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Monster Horns / Spikes
-        ctx.fillStyle = '#f87171';
+        // Horns / Spikes
+        ctx.fillStyle = this.hitFlash > 0 ? '#ff8888' : '#f87171';
         ctx.beginPath();
         ctx.moveTo(-r * 0.5, -r * 0.7);
         ctx.lineTo(-r * 0.8, -r * 1.3);

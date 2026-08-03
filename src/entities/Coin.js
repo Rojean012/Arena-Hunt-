@@ -1,55 +1,71 @@
 import { Entity } from './Entity.js';
-import { GameConfig } from '../config/GameConfig.js';
-import { soundManager } from '../audio/SoundManager.js';
+
+// Preload Gold Coin 2D Asset Image
+const coinImage = new Image();
+coinImage.src = '/assets/images/gold_coin.jpg';
 
 export class Coin extends Entity {
-    constructor(x, y) {
-        super(x, y, 10, '#f1c40f');
-        this.bob = Math.random() * Math.PI * 2;
-        this.value = GameConfig.world.coinValue;
+    constructor(x, y, value = 1) {
+        super(x, y, 9, '#f1c40f');
+        this.value = value;
+        this.spinTimer = Math.random() * Math.PI * 2;
+        this.floatOffset = Math.random() * Math.PI * 2;
     }
 
     update(playerX, playerY) {
-        this.bob += 0.05;
+        this.spinTimer += 0.1;
+        this.floatOffset += 0.05;
 
-        // Magnetism towards player
-        const dist = Math.hypot(playerX - this.x, playerY - this.y);
-        if (dist < GameConfig.world.magnetRadius) {
-            const angle = Math.atan2(playerY - this.y, playerX - this.x);
-            const pullSpeed = (1 - dist / GameConfig.world.magnetRadius) * 8;
-            this.x += Math.cos(angle) * pullSpeed;
-            this.y += Math.sin(angle) * pullSpeed;
+        // Magnet attraction when close to player
+        const dx = playerX - this.x;
+        const dy = playerY - this.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < 100) {
+            this.x += (dx / dist) * 7;
+            this.y += (dy / dist) * 7;
         }
     }
 
     collect() {
         this.dead = true;
-        soundManager.playCoinCollect();
     }
 
     render(ctx, screenX, screenY) {
-        const scale = Math.abs(Math.sin(this.bob));
-        const sy = screenY - Math.sin(this.bob) * 3;
+        const floatY = Math.sin(this.floatOffset) * 3;
+        const drawX = screenX;
+        const drawY = screenY + floatY;
+        const r = this.radius;
 
         ctx.save();
-        ctx.translate(screenX, sy);
-        ctx.scale(1, 0.3 + scale * 0.7);
+        ctx.translate(drawX, drawY);
 
-        // Coin Outer Circle
-        ctx.beginPath();
-        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = '#f1c40f';
-        ctx.fill();
-        ctx.strokeStyle = '#f39c12';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        // Render High-Definition 2D Gold Coin Image Asset!
+        if (coinImage.complete && coinImage.naturalWidth !== 0) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 1.2, 0, Math.PI * 2);
+            ctx.clip();
+
+            ctx.drawImage(coinImage, -r * 1.4, -r * 1.4, r * 2.8, r * 2.8);
+            ctx.restore();
+
+            ctx.strokeStyle = '#f1c40f';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 1.2, 0, Math.PI * 2);
+            ctx.stroke();
+        } else {
+            // Fallback rendering
+            ctx.fillStyle = '#f1c40f';
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         ctx.restore();
-
-        // Dollar Symbol
-        ctx.fillStyle = '#f39c12';
-        ctx.font = 'bold 12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('$', screenX, sy + 4);
     }
 }
