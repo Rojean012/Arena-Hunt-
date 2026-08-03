@@ -293,6 +293,7 @@ export class GameScene {
                 const webImg = enemyProjImages['spiderWeb'];
                 ctx.shadowColor = '#10b981';
                 ctx.shadowBlur = 10;
+                ctx.rotate(25 * Math.PI / 180); // fixed 25° orientation correction
                 if (webImg && (webImg.complete || webImg.width)) {
                     ctx.drawImage(webImg, -16, -16, 32, 32);
                 } else {
@@ -300,7 +301,7 @@ export class GameScene {
                     ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
                 }
             } else if (p.type === 'goblinArrow' || p.color === '#e67e22') {
-                const angle = Math.atan2(p.vy, p.vx);
+                const angle = Math.atan2(p.vy, p.vx) + (-45 * Math.PI / 180); // velocity dir + -45° sprite correction
                 ctx.rotate(angle);
                 const arrowImg = enemyProjImages['goblinArrow'];
                 if (arrowImg && (arrowImg.complete || arrowImg.width)) {
