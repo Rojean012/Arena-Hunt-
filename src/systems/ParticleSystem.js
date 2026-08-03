@@ -1,5 +1,5 @@
 /**
- * ParticleSystem - Visual juice effects (sparks, blood splatters, sparkles)
+ * ParticleSystem - Visual juice effects (sparks, blood splatters, sparkles, elemental trail effects)
  */
 class Particle {
     constructor(x, y, vx, vy, color, size, life) {
@@ -17,8 +17,8 @@ class Particle {
     update() {
         this.x += this.vx;
         this.y += this.vy;
-        this.vx *= 0.95;
-        this.vy *= 0.95;
+        this.vx *= 0.94;
+        this.vy *= 0.94;
         this.life--;
         if (this.life <= 0) this.dead = true;
     }
@@ -74,6 +74,50 @@ export class ParticleSystem {
             const life = 15 + Math.floor(Math.random() * 10);
             this.particles.push(new Particle(x, y, vx, vy, '#f1c40f', size, life));
         }
+    }
+
+    spawnSwordSparkle(x, y) {
+        for (let i = 0; i < 2; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 0.5 + Math.random() * 1.5;
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            const size = 2 + Math.random() * 2.5;
+            const color = Math.random() < 0.5 ? '#38bdf8' : '#fef08a';
+            this.particles.push(new Particle(x, y, vx, vy, color, size, 12));
+        }
+    }
+
+    spawnExplosion(x, y) {
+        for (let i = 0; i < 16; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 2 + Math.random() * 5;
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            const size = 4 + Math.random() * 5;
+            const color = Math.random() < 0.6 ? '#f97316' : '#facc15';
+            this.particles.push(new Particle(x, y, vx, vy, color, size, 22));
+        }
+    }
+
+    spawnFlameEmbers(x, y) {
+        for (let i = 0; i < 2; i++) {
+            const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.2;
+            const speed = 1 + Math.random() * 2;
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            const size = 2 + Math.random() * 3;
+            const color = Math.random() < 0.7 ? '#ef4444' : '#f97316';
+            this.particles.push(new Particle(x, y, vx, vy, color, size, 16));
+        }
+    }
+
+    spawnStardust(x, y) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.5 + Math.random() * 1.2;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+        this.particles.push(new Particle(x, y, vx, vy, '#00ffff', 2.5, 14));
     }
 
     update() {

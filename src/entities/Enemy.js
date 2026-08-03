@@ -24,7 +24,7 @@ function loadEnemySprite(type, src) {
             const bgG = data[1];
             const bgB = data[2];
 
-            // Key out background pixels (corner background match OR light/white backgrounds)
+            // Key out background pixels
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
                 const g = data[i + 1];
@@ -47,7 +47,7 @@ function loadEnemySprite(type, src) {
     };
 }
 
-// Load all 5 NEW high-res 2D enemy models from /assets/images/new_models/
+// Load all 5 high-res 2D enemy models
 loadEnemySprite('slime', '/assets/images/new_models/slime_enemy.png');
 loadEnemySprite('miniSlime', '/assets/images/new_models/slime_enemy.png');
 loadEnemySprite('goblin', '/assets/images/new_models/goblin_enemy.png');
@@ -81,11 +81,20 @@ export class Enemy extends Entity {
         this.shootTimer = Math.random() * 60;
         this.flankAngle = Math.random() * Math.PI * 2;
         this.hitFlash = 0;
+        
+        // Orientation tracking
+        this.angle = 0;
+        this.facingRight = true;
     }
 
     update(playerX, playerY, projectiles) {
         this.animTimer += 0.12;
         if (this.hitFlash > 0) this.hitFlash--;
+
+        const dx = playerX - this.x;
+        const dy = playerY - this.y;
+        this.angle = Math.atan2(dy, dx);
+        this.facingRight = (dx >= 0);
 
         if (this.type === 'bear') {
             this.updateChargerAI(playerX, playerY);
@@ -218,13 +227,31 @@ export class Enemy extends Entity {
     render(ctx, screenX, screenY) {
         const r = this.radius;
 
-        // Monster Action Animations
+        // Monster Action Animations (Squish/Stretch/Bob)
         const squishX = 1.0 + Math.sin(this.animTimer * 2) * 0.08;
         const squishY = 1.0 - Math.sin(this.animTimer * 2) * 0.08;
         const bobY = Math.abs(Math.sin(this.animTimer * 3)) * -3;
 
         ctx.save();
         ctx.translate(screenX, screenY + bobY);
+
+        // Dynamic Sprite Orientation Adjustment per Monster Type
+        if (this.type === 'snake') {
+            // Snakes slither facing movement angle
+            ctx.rotate(this.angle + Math.PI / 2);
+        } else if (this.type === 'goblin' || this.type === 'bear') {
+            // Goblins & Bears flip left/right towards player
+            if (!this.facingRight) {
+                ctx.scale(-1, 1);
+            }
+        } else if (this.type === 'ghost') {
+            // Ghosts tilt float towards direction
+            ctx.rotate(Math.sin(this.animTimer) * 0.15);
+            if (!this.facingRight) {
+                ctx.scale(-1, 1);
+            }
+        }
+
         ctx.scale(squishX, squishY);
 
         // Charger Red Telegraph Arc
@@ -256,8 +283,12 @@ export class Enemy extends Entity {
             ctx.fill();
         }
 
-        // Monster Health Bar
+        ctx.restore();
+
+        // Monster Health Bar (Rendered un-rotated above monster)
         if (this.health < this.maxHealth) {
+            ctx.save();
+            ctx.translate(screenX, screenY + bobY);
             const barW = r * 2;
             const barH = 4;
             const barY = -r - 12;
@@ -267,8 +298,7 @@ export class Enemy extends Entity {
             ctx.fillRect(-r, barY, barW, barH);
             ctx.fillStyle = '#e74c3c';
             ctx.fillRect(-r, barY, barW * pct, barH);
+            ctx.restore();
         }
-
-        ctx.restore();
     }
 }
