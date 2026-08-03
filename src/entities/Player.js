@@ -4,65 +4,68 @@ import { soundManager } from '../audio/SoundManager.js';
 
 // Preload Wang Lin High-Res 2D Hero Asset Image
 let heroCanvas = null;
-const heroImg = new Image();
-heroImg.src = '/assets/images/wang_lin_v3.png';
-heroImg.onload = () => {
-    try {
-        const fullCanvas = document.createElement('canvas');
-        fullCanvas.width = heroImg.width;
-        fullCanvas.height = heroImg.height;
-        const fullCtx = fullCanvas.getContext('2d');
-        fullCtx.drawImage(heroImg, 0, 0);
 
-        const imgData = fullCtx.getImageData(0, 0, fullCanvas.width, fullCanvas.height);
-        const data = imgData.data;
+function loadHeroSprite(src) {
+    const heroImg = new Image();
+    heroImg.src = src;
+    heroImg.onload = () => {
+        try {
+            const targetSize = 256;
+            const canvas = document.createElement('canvas');
+            canvas.width = targetSize;
+            canvas.height = targetSize;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(heroImg, 0, 0, targetSize, targetSize);
 
-        // Clean Background Keying
-        const bgR = data[0];
-        const bgG = data[1];
-        const bgB = data[2];
+            const imgData = ctx.getImageData(0, 0, targetSize, targetSize);
+            const data = imgData.data;
 
-        for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
+            // Fast single-pass background keying
+            const bgR = data[0];
+            const bgG = data[1];
+            const bgB = data[2];
 
-            const dr = Math.abs(r - bgR);
-            const dg = Math.abs(g - bgG);
-            const db = Math.abs(b - bgB);
-            const diff = Math.max(dr, Math.max(dg, db));
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
 
-            if ((r > 240 && g > 240 && b > 240) || diff < 20) {
-                data[i + 3] = 0;
+                const dr = Math.abs(r - bgR);
+                const dg = Math.abs(g - bgG);
+                const db = Math.abs(b - bgB);
+                const diff = Math.max(dr, Math.max(dg, db));
+
+                if ((r > 235 && g > 235 && b > 235) || (r < 25 && g < 25 && b < 25) || diff < 22) {
+                    data[i + 3] = 0;
+                }
             }
+
+            ctx.putImageData(imgData, 0, 0);
+            heroCanvas = canvas;
+        } catch (e) {
+            heroCanvas = heroImg;
         }
+    };
+}
 
-        fullCtx.putImageData(imgData, 0, 0);
-
-        heroCanvas = document.createElement('canvas');
-        heroCanvas.width = 256;
-        heroCanvas.height = 256;
-        const sharpCtx = heroCanvas.getContext('2d');
-        sharpCtx.imageSmoothingEnabled = true;
-        sharpCtx.imageSmoothingQuality = 'high';
-        sharpCtx.drawImage(fullCanvas, 0, 0, 256, 256);
-    } catch (e) {
-        heroCanvas = heroImg;
-    }
-};
+// Try loading wang_lin_v3.jpg first, with fallback to wang_lin_hero.jpg
+loadHeroSprite('/assets/images/wang_lin_v3.jpg');
 
 export class Player extends Entity {
     constructor(x, y) {
-        super(x, y, GameConfig.player.radius, GameConfig.player.color);
+        const pConfig = GameConfig.player || { radius: 22, speed: 3.4, health: 100 };
+        super(x, y, pConfig.radius, '#3498db');
         
-        this.maxHealth = GameConfig.player.health;
+        this.maxHealth = pConfig.health || 100;
         this.health = this.maxHealth;
-        this.baseSpeed = GameConfig.player.speed;
+        this.baseSpeed = pConfig.speed || 3.4;
         this.speed = this.baseSpeed;
 
         this.level = 1;
         this.xp = 0;
-        this.xpToNextLevel = GameConfig.xp.baseXP;
+        this.xpToNextLevel = (GameConfig.xp && GameConfig.xp.baseXP) ? GameConfig.xp.baseXP : 10;
         this.coins = 0;
 
         this.invulnerableTimer = 0;
@@ -78,7 +81,7 @@ export class Player extends Entity {
         this.speed = this.baseSpeed;
         this.level = 1;
         this.xp = 0;
-        this.xpToNextLevel = GameConfig.xp.baseXP;
+        this.xpToNextLevel = (GameConfig.xp && GameConfig.xp.baseXP) ? GameConfig.xp.baseXP : 10;
         this.coins = 0;
         this.invulnerableTimer = 0;
         this.hitFlash = 0;
@@ -134,7 +137,8 @@ export class Player extends Entity {
     levelUp() {
         this.xp -= this.xpToNextLevel;
         this.level++;
-        this.xpToNextLevel = Math.floor(this.xpToNextLevel * GameConfig.xp.multiplier);
+        const multiplier = (GameConfig.xp && GameConfig.xp.multiplier) ? GameConfig.xp.multiplier : 1.25;
+        this.xpToNextLevel = Math.floor(this.xpToNextLevel * multiplier);
         
         // Partial heal on level up
         this.health = Math.min(this.maxHealth, this.health + 25);
@@ -167,14 +171,13 @@ export class Player extends Entity {
 
         // Render Wang Lin 2D Hero Sprite Canvas
         if (heroCanvas && (heroCanvas.complete || heroCanvas.width)) {
-            // Draw hero sprite
             ctx.drawImage(heroCanvas, -r * 1.5, -r * 1.5, r * 3.0, r * 3.0);
 
             // Full-Sprite Red Hit Flash Tint when taking damage!
             if (this.hitFlash > 0) {
                 ctx.save();
                 ctx.globalCompositeOperation = 'source-atop';
-                ctx.fillStyle = 'rgba(239, 68, 68, 0.75)'; // Red damage flash!
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.75)';
                 ctx.fillRect(-r * 1.5, -r * 1.5, r * 3.0, r * 3.0);
                 ctx.restore();
             }

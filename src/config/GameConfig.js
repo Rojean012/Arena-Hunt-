@@ -7,13 +7,19 @@ export const GameConfig = {
         height: 1080
     },
     world: {
+        width: 3000,
+        height: 3000,
         tileSize: 60
     },
     player: {
         radius: 22,
         speed: 3.4,
-        maxHealth: 100,
-        magnetRadius: 80 // Close manual pickup range
+        health: 100,
+        magnetRadius: 80
+    },
+    xp: {
+        baseXP: 10,
+        multiplier: 1.25
     },
     gems: {
         emerald: { value: 1, color: '#2ecc71', radius: 8 },
