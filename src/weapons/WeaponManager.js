@@ -1,57 +1,20 @@
 import { GameConfig } from '../config/GameConfig.js';
 import { soundManager } from '../audio/SoundManager.js';
 
-// Preload 2D In-Game Weapon Image Assets with Offscreen Background Removal
+// Preload 2D In-Game Weapon Image Assets from Categorized /assets/images/powers/
 const weaponImages = {};
 
 function loadWeaponImage(id, src) {
     const img = new Image();
     img.src = src;
-    img.onload = () => {
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, 256, 256);
-
-            const imgData = ctx.getImageData(0, 0, 256, 256);
-            const data = imgData.data;
-
-            const bgR = data[0];
-            const bgG = data[1];
-            const bgB = data[2];
-
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-
-                const dr = Math.abs(r - bgR);
-                const dg = Math.abs(g - bgG);
-                const db = Math.abs(b - bgB);
-                const diff = Math.max(dr, Math.max(dg, db));
-
-                if ((r > 235 && g > 235 && b > 235) || (r < 25 && g < 25 && b < 25) || diff < 28) {
-                    data[i + 3] = 0;
-                }
-            }
-
-            ctx.putImageData(imgData, 0, 0);
-            weaponImages[id] = canvas;
-        } catch (e) {
-            weaponImages[id] = img;
-        }
-    };
+    weaponImages[id] = img;
 }
 
-loadWeaponImage('swords', '/assets/images/sword_icon.jpg');
-loadWeaponImage('fireball', '/assets/images/fireball_icon.jpg');
-loadWeaponImage('lightning', '/assets/images/thunder_icon.jpg');
-loadWeaponImage('flameAura', '/assets/images/flame_ring_icon.jpg');
-loadWeaponImage('boomerang', '/assets/images/boomerang_icon.jpg');
+loadWeaponImage('swords', '/assets/images/powers/sword_icon.png');
+loadWeaponImage('fireball', '/assets/images/powers/fireball_icon.png');
+loadWeaponImage('lightning', '/assets/images/powers/thunder_icon.png');
+loadWeaponImage('flameAura', '/assets/images/powers/flame_ring_icon.png');
+loadWeaponImage('boomerang', '/assets/images/powers/boomerang_icon.png');
 
 export class WeaponManager {
     constructor() {
@@ -352,7 +315,7 @@ export class WeaponManager {
             const w = this.weapons['flameAura'];
             const auraImg = weaponImages['flameAura'];
             const radius = w.config.radius;
-            const dSize = radius * 1.4; // Half thin size!
+            const dSize = radius * 1.4;
 
             const sweepAlpha = Math.max(0.1, (Math.sin(this.flameRotationAngle * 3.0) * 0.45 + 0.55));
 

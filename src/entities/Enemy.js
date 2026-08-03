@@ -2,66 +2,26 @@ import { Entity } from './Entity.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { soundManager } from '../audio/SoundManager.js';
 
-// Preload All 10 Enemy Asset Images with Instant Zero-Stutter Offscreen Canvases
+// Load Clean Pre-Rendered Categorized 2D Enemy Assets
 const enemySprites = {};
 
 function loadEnemySprite(type, src) {
     const img = new Image();
     img.src = src;
-    img.onload = () => {
-        try {
-            const targetSize = ['stone_golem', 'frost_dragon', 'bear'].includes(type) ? 384 : 256;
-            const canvas = document.createElement('canvas');
-            canvas.width = targetSize;
-            canvas.height = targetSize;
-            const ctx = canvas.getContext('2d');
-
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, targetSize, targetSize);
-
-            const imgData = ctx.getImageData(0, 0, targetSize, targetSize);
-            const data = imgData.data;
-
-            const bgR = data[0];
-            const bgG = data[1];
-            const bgB = data[2];
-
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-
-                const dr = Math.abs(r - bgR);
-                const dg = Math.abs(g - bgG);
-                const db = Math.abs(b - bgB);
-                const diff = Math.max(dr, Math.max(dg, db));
-
-                if ((r > 240 && g > 240 && b > 240) || diff < 24) {
-                    data[i + 3] = 0;
-                }
-            }
-
-            ctx.putImageData(imgData, 0, 0);
-            enemySprites[type] = canvas;
-        } catch (e) {
-            enemySprites[type] = img;
-        }
-    };
+    enemySprites[type] = img;
 }
 
-// Load all 10 Enemy Models from /assets/images/new_models/
-loadEnemySprite('slime', '/assets/images/new_models/slime_enemy.png');
-loadEnemySprite('miniSlime', '/assets/images/new_models/slime_enemy.png');
-loadEnemySprite('goblin', '/assets/images/new_models/goblin_enemy.png');
-loadEnemySprite('ghost', '/assets/images/new_models/ghost_enemy.png');
-loadEnemySprite('snake', '/assets/images/new_models/Viper Serpent.png');
-loadEnemySprite('bear', '/assets/images/new_models/Mutant Orc Berserker.png');
-loadEnemySprite('fox_demon', '/assets/images/new_models/fox_demon.png');
-loadEnemySprite('cultist_sorcerer', '/assets/images/new_models/cultist_sorcerer.png');
-loadEnemySprite('stone_golem', '/assets/images/new_models/stone_golem.png');
-loadEnemySprite('spider_fiend', '/assets/images/new_models/spider_fiend.png');
-loadEnemySprite('frost_dragon', '/assets/images/new_models/frost_dragon.png');
+loadEnemySprite('slime', '/assets/images/enemies/slime.png');
+loadEnemySprite('miniSlime', '/assets/images/enemies/slime.png');
+loadEnemySprite('goblin', '/assets/images/enemies/goblin.png');
+loadEnemySprite('ghost', '/assets/images/enemies/ghost.png');
+loadEnemySprite('snake', '/assets/images/enemies/snake.png');
+loadEnemySprite('bear', '/assets/images/enemies/bear.png');
+loadEnemySprite('fox_demon', '/assets/images/enemies/fox_demon.png');
+loadEnemySprite('cultist_sorcerer', '/assets/images/enemies/cultist.png');
+loadEnemySprite('stone_golem', '/assets/images/enemies/stone_golem.png');
+loadEnemySprite('spider_fiend', '/assets/images/enemies/spider_fiend.png');
+loadEnemySprite('frost_dragon', '/assets/images/enemies/frost_dragon.png');
 
 export class Enemy extends Entity {
     constructor(x, y, type = 'slime') {
@@ -276,7 +236,6 @@ export class Enemy extends Entity {
             this.y += (dy / dist) * this.speed;
         }
 
-        // Balanced Cultist Sorcerer Attack (220-tick cooldown, reduced damage!)
         this.shootTimer++;
         if (this.shootTimer >= 220) {
             this.shootTimer = 0;
@@ -396,7 +355,6 @@ export class Enemy extends Entity {
 
         const r = this.radius;
 
-        // Melee Attack Lunge Pulse Animation when close to player!
         const attackPulse = this.isAttacking ? Math.sin(this.animTimer * 6) * 5.0 : 0;
         const squishX = 1.0 + Math.sin(this.animTimer * 2) * 0.06;
         const squishY = 1.0 - Math.sin(this.animTimer * 2) * 0.06;
@@ -408,19 +366,11 @@ export class Enemy extends Entity {
         if (this.type === 'snake') {
             ctx.rotate(this.angle + Math.PI / 2);
         } else {
-            // Goblin raw sprite image faces LEFT by default!
-            if (this.type === 'goblin') {
-                if (this.facingRight) {
-                    ctx.scale(1, 1);
-                } else {
-                    ctx.scale(-1, 1);
-                }
+            // Note: Goblin orientation normalized directly in /assets/images/enemies/goblin.png!
+            if (this.facingRight) {
+                ctx.scale(-1, 1);
             } else {
-                if (this.facingRight) {
-                    ctx.scale(-1, 1);
-                } else {
-                    ctx.scale(1, 1);
-                }
+                ctx.scale(1, 1);
             }
         }
 

@@ -14,50 +14,17 @@ import { CardUpgradeModal } from '../ui/CardUpgradeModal.js';
 import { storageSystem } from '../systems/StorageSystem.js';
 import { PlatformSDK } from '../sdk/PlatformSDK.js';
 
-// Preload 2D Enemy Projectile Assets with Fast Offscreen Canvases
+// Preload 2D Enemy Projectile Assets from Categorized /assets/images/projectiles/
 const enemyProjImages = {};
 
 function loadEnemyProjImage(id, src) {
     const img = new Image();
     img.src = src;
-    img.onload = () => {
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
-            const ctx = canvas.getContext('2d');
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, 64, 64);
-
-            const imgData = ctx.getImageData(0, 0, 64, 64);
-            const data = imgData.data;
-            const bgR = data[0];
-            const bgG = data[1];
-            const bgB = data[2];
-
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                const dr = Math.abs(r - bgR);
-                const dg = Math.abs(g - bgG);
-                const db = Math.abs(b - bgB);
-                if ((r > 235 && g > 235 && b > 235) || (r < 25 && g < 25 && b < 25) || (dr < 25 && dg < 25 && db < 25)) {
-                    data[i + 3] = 0;
-                }
-            }
-
-            ctx.putImageData(imgData, 0, 0);
-            enemyProjImages[id] = canvas;
-        } catch (e) {
-            enemyProjImages[id] = img;
-        }
-    };
+    enemyProjImages[id] = img;
 }
 
-loadEnemyProjImage('spiderWeb', '/assets/images/spider_web_proj.jpg');
-loadEnemyProjImage('goblinArrow', '/assets/images/goblin_arrow_proj.jpg');
+loadEnemyProjImage('spiderWeb', '/assets/images/projectiles/spider_web.png');
+loadEnemyProjImage('goblinArrow', '/assets/images/projectiles/goblin_arrow.png');
 
 export class GameScene {
     constructor(sceneManager) {
@@ -82,7 +49,7 @@ export class GameScene {
     }
 
     enter(data) {
-        // FIX: Resume Protection! Do not reset state when resuming from Pause menu!
+        // Resume Protection! Do not reset state when resuming from Pause menu!
         if (data && data.isResume) {
             if (soundManager && soundManager.playMusic) soundManager.playMusic();
             return;
@@ -323,7 +290,6 @@ export class GameScene {
                 ctx.arc(0, 0, p.currentRadius, 0, Math.PI * 2);
                 ctx.stroke();
             } else if (p.type === 'spiderWeb') {
-                // Completely straight upright spider web (0° rotation, ZERO slant!)
                 const webImg = enemyProjImages['spiderWeb'];
                 ctx.shadowColor = '#10b981';
                 ctx.shadowBlur = 10;
@@ -334,7 +300,6 @@ export class GameScene {
                     ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
                 }
             } else if (p.type === 'goblinArrow' || p.color === '#e67e22') {
-                // Perfectly aligned arrow vector (pointing in direction of movement)
                 const angle = Math.atan2(p.vy, p.vx);
                 ctx.rotate(angle);
                 const arrowImg = enemyProjImages['goblinArrow'];

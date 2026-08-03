@@ -1,56 +1,19 @@
 import { GameConfig } from '../config/GameConfig.js';
 
-// Preload 2D Weapon Textures for Top Right HUD Inventory
+// Preload Categorized 2D Weapon Textures for Top Right HUD Inventory
 const hudWeaponTextures = {};
 
 function loadHudTexture(id, src) {
     const img = new Image();
     img.src = src;
-    img.onload = () => {
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
-            const ctx = canvas.getContext('2d');
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, 64, 64);
-
-            const imgData = ctx.getImageData(0, 0, 64, 64);
-            const data = imgData.data;
-
-            const bgR = data[0];
-            const bgG = data[1];
-            const bgB = data[2];
-
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-
-                const dr = Math.abs(r - bgR);
-                const dg = Math.abs(g - bgG);
-                const db = Math.abs(b - bgB);
-                const diff = Math.max(dr, Math.max(dg, db));
-
-                if ((r > 235 && g > 235 && b > 235) || (r < 25 && g < 25 && b < 25) || diff < 20) {
-                    data[i + 3] = 0;
-                }
-            }
-
-            ctx.putImageData(imgData, 0, 0);
-            hudWeaponTextures[id] = canvas;
-        } catch (e) {
-            hudWeaponTextures[id] = img;
-        }
-    };
+    hudWeaponTextures[id] = img;
 }
 
-loadHudTexture('swords', '/assets/images/sword_icon.jpg');
-loadHudTexture('fireball', '/assets/images/fireball_icon.jpg');
-loadHudTexture('lightning', '/assets/images/thunder_icon.jpg');
-loadHudTexture('flameAura', '/assets/images/flame_ring_icon.jpg');
-loadHudTexture('boomerang', '/assets/images/boomerang_icon.jpg');
+loadHudTexture('swords', '/assets/images/powers/sword_icon.png');
+loadHudTexture('fireball', '/assets/images/powers/fireball_icon.png');
+loadHudTexture('lightning', '/assets/images/powers/thunder_icon.png');
+loadHudTexture('flameAura', '/assets/images/powers/flame_ring_icon.png');
+loadHudTexture('boomerang', '/assets/images/powers/boomerang_icon.png');
 
 export class UIRenderer {
     render(ctx, player, score, waveTier, waveTimer, noticeTimer, noticeTitle, canvasWidth, canvasHeight, levelManager, weaponManager, spawner) {

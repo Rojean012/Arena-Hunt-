@@ -1,62 +1,23 @@
 import { input } from '../core/Input.js';
 import { soundManager } from '../audio/SoundManager.js';
 
-// Instant Pre-Cached 2D Power Card Icon Assets (0ms Delay!)
+// Pre-load Categorized 2D Power Card Icon Assets
 const powerCardImages = {};
 
-function preCachePowerCardImage(id, src) {
+function loadPowerCardImage(id, src) {
     const img = new Image();
     img.src = src;
-    img.onload = () => {
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = 120;
-            canvas.height = 120;
-            const ctx = canvas.getContext('2d');
-
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, 120, 120);
-
-            const imgData = ctx.getImageData(0, 0, 120, 120);
-            const data = imgData.data;
-
-            const bgR = data[0];
-            const bgG = data[1];
-            const bgB = data[2];
-
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-
-                const dr = Math.abs(r - bgR);
-                const dg = Math.abs(g - bgG);
-                const db = Math.abs(b - bgB);
-                const diff = Math.max(dr, Math.max(dg, db));
-
-                if ((r > 240 && g > 240 && b > 240) || (r < 25 && g < 25 && b < 25) || diff < 20) {
-                    data[i + 3] = 0;
-                }
-            }
-
-            ctx.putImageData(imgData, 0, 0);
-            powerCardImages[id] = canvas;
-        } catch (e) {
-            powerCardImages[id] = img;
-        }
-    };
+    powerCardImages[id] = img;
 }
 
-// Pre-cache all 8 Power Card icons on boot initialization
-preCachePowerCardImage('swords', '/assets/images/sword_icon.jpg');
-preCachePowerCardImage('fireball', '/assets/images/fireball_icon.jpg');
-preCachePowerCardImage('lightning', '/assets/images/thunder_icon.jpg');
-preCachePowerCardImage('flameAura', '/assets/images/flame_ring_icon.jpg');
-preCachePowerCardImage('boomerang', '/assets/images/boomerang_icon.jpg');
-preCachePowerCardImage('stat_speed', '/assets/images/boots_speed_icon.jpg');
-preCachePowerCardImage('stat_magnet', '/assets/images/gem_magnet_icon.jpg');
-preCachePowerCardImage('stat_health', '/assets/images/vitality_elixir_icon.jpg');
+loadPowerCardImage('swords', '/assets/images/powers/sword_icon.png');
+loadPowerCardImage('fireball', '/assets/images/powers/fireball_icon.png');
+loadPowerCardImage('lightning', '/assets/images/powers/thunder_icon.png');
+loadPowerCardImage('flameAura', '/assets/images/powers/flame_ring_icon.png');
+loadPowerCardImage('boomerang', '/assets/images/powers/boomerang_icon.png');
+loadPowerCardImage('stat_speed', '/assets/images/powers/boots_speed_icon.png');
+loadPowerCardImage('stat_magnet', '/assets/images/powers/gem_magnet_icon.png');
+loadPowerCardImage('stat_health', '/assets/images/powers/vitality_elixir_icon.png');
 
 export class CardUpgradeModal {
     constructor() {
@@ -176,7 +137,7 @@ export class CardUpgradeModal {
             ctx.font = '600 13px "Segoe UI", sans-serif';
             ctx.fillText(card.rarity || 'COMMON', cardWidth / 2, 70);
 
-            // Instant 2D Power Icon Asset
+            // Categorized Transparent 2D Power Icon
             const iconImg = powerCardImages[card.id];
             const iconX = (cardWidth - 90) / 2;
             const iconY = 90;
