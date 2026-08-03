@@ -400,10 +400,20 @@ export class Enemy extends Entity {
         if (this.type === 'snake') {
             ctx.rotate(this.angle + Math.PI / 2);
         } else {
-            if (this.facingRight) {
-                ctx.scale(-1, 1);
+            // FIX: Goblin raw sprite image faces LEFT by default!
+            // Adjust scaling so Goblin faces the player accurately without turning backwards!
+            if (this.type === 'goblin') {
+                if (this.facingRight) {
+                    ctx.scale(1, 1);
+                } else {
+                    ctx.scale(-1, 1);
+                }
             } else {
-                ctx.scale(1, 1);
+                if (this.facingRight) {
+                    ctx.scale(-1, 1);
+                } else {
+                    ctx.scale(1, 1);
+                }
             }
         }
 

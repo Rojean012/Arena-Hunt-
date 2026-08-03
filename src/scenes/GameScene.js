@@ -81,7 +81,13 @@ export class GameScene {
         this.enemyProjectiles = [];
     }
 
-    enter() {
+    enter(data) {
+        // FIX: Resume Protection! Do not reset state when resuming from Pause menu!
+        if (data && data.isResume) {
+            if (soundManager && soundManager.playMusic) soundManager.playMusic();
+            return;
+        }
+
         this.player.reset(0, 0);
         this.camera.x = 0;
         this.camera.y = 0;
@@ -317,18 +323,18 @@ export class GameScene {
                 ctx.arc(0, 0, p.currentRadius, 0, Math.PI * 2);
                 ctx.stroke();
             } else if (p.type === 'spiderWeb') {
+                // Completely straight upright spider web (0° rotation, ZERO slant!)
                 const webImg = enemyProjImages['spiderWeb'];
                 ctx.shadowColor = '#10b981';
                 ctx.shadowBlur = 10;
                 if (webImg && (webImg.complete || webImg.width)) {
-                    // Straight upright spider web (ZERO slant!)
                     ctx.drawImage(webImg, -16, -16, 32, 32);
                 } else {
                     ctx.fillStyle = '#10b981';
                     ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
                 }
             } else if (p.type === 'goblinArrow' || p.color === '#e67e22') {
-                // Straight arrow pointing directly along velocity vector
+                // Perfectly aligned arrow vector (pointing in direction of movement)
                 const angle = Math.atan2(p.vy, p.vx);
                 ctx.rotate(angle);
                 const arrowImg = enemyProjImages['goblinArrow'];
@@ -336,7 +342,7 @@ export class GameScene {
                     ctx.drawImage(arrowImg, -14, -14, 28, 28);
                 } else {
                     ctx.fillStyle = '#e67e22';
-                    ctx.fillRect(-12, -2, 24, 4);
+                    ctx.fillRect(-14, -2, 28, 4);
                 }
             } else {
                 ctx.fillStyle = p.color || '#ef4444';
