@@ -19,6 +19,10 @@ export class UIRenderer {
 
     renderHUD(ctx, player, score, coins, highScore, waveTier, levelManager, weaponManager, spawner, canvasWidth, canvasHeight) {
         if (!player || !ctx) return;
+
+        const cw = (canvasWidth && Number.isFinite(canvasWidth) && canvasWidth > 0) ? canvasWidth : (window.innerWidth || 1920);
+        const ch = (canvasHeight && Number.isFinite(canvasHeight) && canvasHeight > 0) ? canvasHeight : (window.innerHeight || 1080);
+
         ctx.save();
 
         // 1. Health Bar (Top Left)
@@ -65,13 +69,13 @@ export class UIRenderer {
         ctx.textAlign = 'right';
         ctx.font = '700 16px "Outfit", sans-serif';
         ctx.fillStyle = '#ef4444';
-        ctx.fillText(`WAVE TIER ${waveTier || 1}`, canvasWidth - 20, 35);
+        ctx.fillText(`WAVE TIER ${waveTier || 1}`, cw - 20, 35);
 
         ctx.fillStyle = '#94a3b8';
         ctx.font = '500 14px "Outfit", sans-serif';
-        ctx.fillText('WEAPONS:', canvasWidth - 220, 60);
+        ctx.fillText('WEAPONS:', cw - 220, 60);
 
-        let slotX = canvasWidth - 210;
+        let slotX = cw - 210;
         if (weaponManager && weaponManager.weapons) {
             Object.keys(weaponManager.weapons).forEach(id => {
                 const w = weaponManager.weapons[id];
@@ -90,15 +94,15 @@ export class UIRenderer {
             });
         }
 
-        // 4. Milestone Wave Warning Banner
+        // 4. Milestone Wave Warning Banner (Bulletproof Finite Gradients!)
         const noticeTimer = spawner ? (spawner.milestoneNoticeTimer || spawner.waveNoticeTimer || 0) : 0;
         const noticeTitle = spawner ? (spawner.milestoneTitle || spawner.waveNoticeText || '') : '';
 
         if (noticeTimer > 0 && noticeTitle) {
             const bannerW = 640;
             const bannerH = 84;
-            const bannerX = (canvasWidth - bannerW) / 2;
-            const bannerY = canvasHeight * 0.18;
+            const bannerX = (cw - bannerW) / 2;
+            const bannerY = ch * 0.18;
 
             const alpha = Math.min(1, noticeTimer / 30);
 
@@ -108,14 +112,17 @@ export class UIRenderer {
             ctx.shadowColor = 'rgba(220, 38, 38, 0.6)';
             ctx.shadowBlur = 20;
 
-            const plaqueGrad = ctx.createLinearGradient(bannerX, bannerY, bannerX, bannerY + bannerH);
+            const y0 = Number.isFinite(bannerY) ? bannerY : 100;
+            const y1 = Number.isFinite(bannerY + bannerH) ? bannerY + bannerH : 184;
+
+            const plaqueGrad = ctx.createLinearGradient(bannerX, y0, bannerX, y1);
             plaqueGrad.addColorStop(0, '#1e1b4b');
             plaqueGrad.addColorStop(0.5, '#0f172a');
             plaqueGrad.addColorStop(1, '#020617');
 
             ctx.fillStyle = plaqueGrad;
             ctx.beginPath();
-            ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 14);
+            ctx.roundRect(bannerX, y0, bannerW, bannerH, 14);
             ctx.fill();
 
             ctx.shadowColor = 'transparent';
@@ -123,31 +130,34 @@ export class UIRenderer {
             ctx.strokeStyle = '#eab308';
             ctx.lineWidth = 2.5;
             ctx.beginPath();
-            ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 14);
+            ctx.roundRect(bannerX, y0, bannerW, bannerH, 14);
             ctx.stroke();
 
             ctx.strokeStyle = '#dc2626';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.roundRect(bannerX + 6, bannerY + 6, bannerW - 12, bannerH - 12, 10);
+            ctx.roundRect(bannerX + 6, y0 + 6, bannerW - 12, bannerH - 12, 10);
             ctx.stroke();
 
             ctx.fillStyle = '#ef4444';
-            ctx.fillRect(bannerX + 10, bannerY + 10, 6, 6);
-            ctx.fillRect(bannerX + bannerW - 16, bannerY + 10, 6, 6);
-            ctx.fillRect(bannerX + 10, bannerY + bannerH - 16, 6, 6);
-            ctx.fillRect(bannerX + bannerW - 16, bannerY + bannerH - 16, 6, 6);
+            ctx.fillRect(bannerX + 10, y0 + 10, 6, 6);
+            ctx.fillRect(bannerX + bannerW - 16, y0 + 10, 6, 6);
+            ctx.fillRect(bannerX + 10, y0 + bannerH - 16, 6, 6);
+            ctx.fillRect(bannerX + bannerW - 16, y0 + bannerH - 16, 6, 6);
 
             ctx.textAlign = 'center';
             ctx.font = '900 24px "Cinzel", "Outfit", serif';
 
-            const textGrad = ctx.createLinearGradient(0, bannerY + 25, 0, bannerY + 55);
+            const textY0 = y0 + 25;
+            const textY1 = y0 + 55;
+
+            const textGrad = ctx.createLinearGradient(0, textY0, 0, textY1);
             textGrad.addColorStop(0, '#ffffff');
             textGrad.addColorStop(0.5, '#fef08a');
             textGrad.addColorStop(1, '#facc15');
 
             ctx.fillStyle = textGrad;
-            ctx.fillText(noticeTitle, canvasWidth / 2, bannerY + 50);
+            ctx.fillText(noticeTitle, cw / 2, y0 + 50);
 
             ctx.restore();
         }
