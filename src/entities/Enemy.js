@@ -10,7 +10,6 @@ function loadEnemySprite(type, src) {
     img.src = src;
     img.onload = () => {
         try {
-            // Step 1: Background Removal on full resolution canvas
             const fullCanvas = document.createElement('canvas');
             fullCanvas.width = img.width;
             fullCanvas.height = img.height;
@@ -46,7 +45,6 @@ function loadEnemySprite(type, src) {
 
             fullCtx.putImageData(imgData, 0, 0);
 
-            // Step 2: Multi-step Downsample to a crisp 256x256 (or 384x384 for bosses) to eliminate all bilinear blur!
             const targetSize = ['stone_golem', 'frost_dragon', 'bear'].includes(type) ? 384 : 256;
             const sharpCanvas = document.createElement('canvas');
             sharpCanvas.width = targetSize;
@@ -64,7 +62,7 @@ function loadEnemySprite(type, src) {
     };
 }
 
-// Load all 10 Enemy Models from /assets/images/new_models/
+// Load all 10 Enemy Models
 loadEnemySprite('slime', '/assets/images/new_models/slime_enemy.png');
 loadEnemySprite('miniSlime', '/assets/images/new_models/slime_enemy.png');
 loadEnemySprite('goblin', '/assets/images/new_models/goblin_enemy.png');
@@ -99,7 +97,7 @@ export class Enemy extends Entity {
         this.flankAngle = Math.random() * Math.PI * 2;
         this.hitFlash = 0;
         
-        // Instant orientation tracking
+        // Smooth orientation tracking
         this.angle = 0;
         this.facingRight = true;
     }
@@ -110,8 +108,17 @@ export class Enemy extends Entity {
 
         const dx = playerX - this.x;
         const dy = playerY - this.y;
-        this.angle = Math.atan2(dy, dx);
-        this.facingRight = (dx >= 0);
+        const dist = Math.hypot(dx, dy);
+
+        // Smooth angle lerp (prevents serpent spinning near player center!)
+        if (dist > 15) {
+            const targetAngle = Math.atan2(dy, dx);
+            let diff = targetAngle - this.angle;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            this.angle += diff * 0.15;
+            this.facingRight = (dx >= 0);
+        }
 
         if (this.type === 'bear') {
             this.updateChargerAI(playerX, playerY);
@@ -409,7 +416,6 @@ export class Enemy extends Entity {
             ctx.fill();
         }
 
-        // Render Ultra-Sharp Downsampled Pre-Cached Sprite!
         const sprite = enemySprites[this.type];
 
         if (sprite && (sprite.complete || sprite.width)) {

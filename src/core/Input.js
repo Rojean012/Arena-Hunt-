@@ -113,9 +113,18 @@ export class InputManager {
         return this.mouse.isDown || this.keys['space'];
     }
 
-    clearJustPressed() {
+    wasJustClicked() {
+        return this.mouse.isJustPressed || this.mouse.clickPending;
+    }
+
+    consumeClick() {
         this.mouse.isJustPressed = false;
         this.mouse.clickPending = false;
+        this.mouse.isDown = false;
+    }
+
+    clearJustPressed() {
+        this.consumeClick();
     }
 }
 

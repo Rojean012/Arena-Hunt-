@@ -1,6 +1,6 @@
 import { input } from '../core/Input.js';
 
-// Preload 2D Power Icon Image Assets for Upgrade Cards
+// Preload 2D Power Icon Image Assets for All Upgrade Cards
 const powerIcons = {};
 function loadPowerIcon(id, src) {
     const img = new Image();
@@ -14,9 +14,26 @@ loadPowerIcon('lightning', '/assets/images/thunder_icon.jpg');
 loadPowerIcon('flameAura', '/assets/images/flame_ring_icon.jpg');
 loadPowerIcon('boomerang', '/assets/images/boomerang_icon.jpg');
 
+loadPowerIcon('stat_speed', '/assets/images/boots_speed_icon.jpg');
+loadPowerIcon('stat_magnet', '/assets/images/gem_magnet_icon.jpg');
+loadPowerIcon('stat_health', '/assets/images/vitality_elixir_icon.jpg');
+
 export class CardUpgradeModal {
     constructor() {
         this.hoveredIndex = -1;
+        this.openCooldown = 0;
+    }
+
+    clearInput() {
+        if (input.consumeClick) {
+            input.consumeClick();
+        } else if (input.clearJustPressed) {
+            input.clearJustPressed();
+        } else {
+            input.mouse.isJustPressed = false;
+            input.mouse.clickPending = false;
+            input.mouse.isDown = false;
+        }
     }
 
     update(levelManager, weaponManager, player, screenWidth, screenHeight) {
@@ -48,13 +65,22 @@ export class CardUpgradeModal {
         // Gate click inputs on the very first frame the modal opens
         if (levelManager.justOpened) {
             levelManager.justOpened = false;
-            input.consumeClick();
+            this.openCooldown = 8;
+            this.clearInput();
             return;
         }
 
-        if (input.wasJustClicked() || input.clickPending) {
+        if (this.openCooldown > 0) {
+            this.openCooldown--;
+            this.clearInput();
+            return;
+        }
+
+        // 100% Reliable Card Click Response
+        const isClicked = input.wasJustClicked ? input.wasJustClicked() : (input.mouse.isJustPressed || input.mouse.clickPending || input.mouse.isDown);
+        if (isClicked) {
             if (this.hoveredIndex !== -1) {
-                input.consumeClick();
+                this.clearInput();
                 levelManager.selectUpgrade(this.hoveredIndex, weaponManager, player);
             }
         }
@@ -75,7 +101,7 @@ export class CardUpgradeModal {
         ctx.save();
 
         // Dark Glassmorphism Backdrop Overlay
-        ctx.fillStyle = 'rgba(2, 6, 23, 0.82)';
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.85)';
         ctx.fillRect(0, 0, screenWidth, screenHeight);
 
         // Header Title
@@ -129,7 +155,7 @@ export class CardUpgradeModal {
             ctx.fillStyle = opt.rarity === 'RARE' ? '#f87171' : '#38bdf8';
             ctx.fillText(opt.rarity || 'COMMON', cardWidth / 2, 31);
 
-            // 2D Power Image Icon Frame
+            // 2D Power Image Icon Frame (For ALL 8 Weapons & Stats!)
             const iconImg = powerIcons[opt.id];
             const iconSize = 90;
             const iconX = (cardWidth - iconSize) / 2;
@@ -149,7 +175,6 @@ export class CardUpgradeModal {
                 ctx.roundRect(iconX, iconY, iconSize, iconSize, 12);
                 ctx.stroke();
             } else {
-                // Fallback Emoji Icon
                 ctx.font = '48px "Outfit", sans-serif';
                 ctx.fillText(opt.icon || '⚔️', cardWidth / 2, iconY + 60);
             }
