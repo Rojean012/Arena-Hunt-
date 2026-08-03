@@ -106,7 +106,7 @@ export class WeaponManager {
             w.config.count = Math.min(6, Math.floor(1 + w.level / 2));
         } else if (weaponId === 'flameAura') {
             w.config.baseDamage += 8;
-            w.config.radius += 14;
+            w.config.radius += 10;
         } else if (weaponId === 'boomerang') {
             w.config.baseDamage += 10;
             w.config.count = Math.min(4, Math.floor(1 + w.level / 3));
@@ -217,10 +217,10 @@ export class WeaponManager {
             }
         }
 
-        // 4. Rotating Pulsing Flame Ring (Fade In -> Rotate -> Fade Out Loop!)
+        // 4. Ultra-Thin Sweeping Flame Ring
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
-            this.flameRotationAngle -= 0.035;
+            this.flameRotationAngle -= 0.04;
 
             w.cooldownTimer++;
             if (w.cooldownTimer >= w.config.cooldown) {
@@ -347,26 +347,25 @@ export class WeaponManager {
         const px = camera.getScreenX(player.x, canvasWidth);
         const py = camera.getScreenY(player.y, canvasHeight);
 
-        // 1. Sleek Thinner Pulsing Flame Ring (Fade In -> Rotate -> Fade Out Loop!)
+        // 1. Ultra-Thin Flame Ring with Sweeping Trailing Fade Loop
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
             const auraImg = weaponImages['flameAura'];
             const radius = w.config.radius;
-            const dSize = radius * 1.8; // Thinner ring size!
+            const dSize = radius * 1.4; // Half thin size!
 
-            // Smooth Pulsing Alpha Loop (Fade In -> Rotate -> Fade Out)
-            const pulseAlpha = Math.max(0.12, (Math.sin(this.flameRotationAngle * 2.5) * 0.45 + 0.55));
+            const sweepAlpha = Math.max(0.1, (Math.sin(this.flameRotationAngle * 3.0) * 0.45 + 0.55));
 
             ctx.save();
             ctx.translate(px, py);
             ctx.rotate(this.flameRotationAngle);
-            ctx.globalAlpha = pulseAlpha;
+            ctx.globalAlpha = sweepAlpha;
 
             if (auraImg && (auraImg.complete || auraImg.width)) {
                 ctx.drawImage(auraImg, -dSize / 2, -dSize / 2, dSize, dSize);
             } else {
                 ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.arc(0, 0, radius, 0, Math.PI * 2);
                 ctx.stroke();

@@ -11,7 +11,7 @@ import { LevelManager } from '../managers/LevelManager.js';
 import { ParticleSystem } from '../systems/ParticleSystem.js';
 import { CollisionSystem } from '../systems/CollisionSystem.js';
 import { CardUpgradeModal } from '../ui/CardUpgradeModal.js';
-import { StorageSystem } from '../systems/StorageSystem.js';
+import { storageSystem } from '../systems/StorageSystem.js';
 import { PlatformSDK } from '../sdk/PlatformSDK.js';
 
 // Preload 2D Enemy Projectile Assets with Fast Offscreen Canvases
@@ -159,11 +159,9 @@ export class GameScene {
             this.enemyProjectiles,
             this.particles,
             (xpAmount) => {
-                this.levelManager.totalGems += xpAmount;
                 this.score += xpAmount * 10;
-                const leveledUp = this.player.addXP(xpAmount);
+                const leveledUp = this.levelManager.addXP(xpAmount, this.weaponManager);
                 if (leveledUp) {
-                    this.levelManager.triggerLevelUp(this.player, this.weaponManager);
                     if (input.consumeClick) input.consumeClick();
                 }
             },
@@ -212,13 +210,13 @@ export class GameScene {
     onEnemyDefeated(enemy) {
         this.score += enemy.scoreValue;
         this.enemiesDefeated++;
-        this.spawner.onEnemyDefeated(); // Advance wave progression kill counter!
+        this.spawner.onEnemyDefeated();
         this.spawner.spawnRewards(enemy.x, enemy.y, enemy.type);
     }
 
     onPlayerDeath() {
         this.isGameOver = true;
-        StorageSystem.saveHighScore(this.score);
+        storageSystem.setHighScore(this.score);
         PlatformSDK.submitScore(this.score);
 
         if (soundManager && soundManager.playGameOver) {
@@ -323,12 +321,14 @@ export class GameScene {
                 ctx.shadowColor = '#10b981';
                 ctx.shadowBlur = 10;
                 if (webImg && (webImg.complete || webImg.width)) {
+                    // Straight upright spider web (ZERO slant!)
                     ctx.drawImage(webImg, -16, -16, 32, 32);
                 } else {
                     ctx.fillStyle = '#10b981';
                     ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
                 }
             } else if (p.type === 'goblinArrow' || p.color === '#e67e22') {
+                // Straight arrow pointing directly along velocity vector
                 const angle = Math.atan2(p.vy, p.vx);
                 ctx.rotate(angle);
                 const arrowImg = enemyProjImages['goblinArrow'];

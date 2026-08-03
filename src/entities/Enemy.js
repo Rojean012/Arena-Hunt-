@@ -99,16 +99,17 @@ export class Enemy extends Entity {
         const dy = playerY - this.y;
         const dist = Math.hypot(dx, dy);
 
+        // Smooth orientation tracking without jittery back-and-forth flipping!
         if (dist > 25) {
             const targetAngle = Math.atan2(dy, dx);
             let diff = targetAngle - this.angle;
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
             this.angle += diff * 0.12;
-            while (this.angle < -Math.PI) this.angle += Math.PI * 2;
-            while (this.angle > Math.PI) this.angle -= Math.PI * 2;
 
-            this.facingRight = (dx >= 0);
+            if (Math.abs(dx) > 3.0) {
+                this.facingRight = (dx > 0);
+            }
         }
 
         if (this.type === 'bear') {
@@ -182,7 +183,7 @@ export class Enemy extends Entity {
         }
 
         this.shootTimer++;
-        if (this.shootTimer >= 100) {
+        if (this.shootTimer >= 110) {
             this.shootTimer = 0;
             if (projectiles && dist < 420) {
                 if (soundManager && soundManager.playShoot) {
@@ -192,10 +193,10 @@ export class Enemy extends Entity {
                 projectiles.push({
                     x: this.x,
                     y: this.y,
-                    vx: Math.cos(angle) * 5,
-                    vy: Math.sin(angle) * 5,
-                    damage: this.damage,
-                    radius: 4,
+                    vx: Math.cos(angle) * 4.8,
+                    vy: Math.sin(angle) * 4.8,
+                    damage: this.damage * 0.7,
+                    radius: 5,
                     color: '#e67e22',
                     dead: false
                 });
@@ -215,17 +216,17 @@ export class Enemy extends Entity {
             }
 
             this.chargeTimer++;
-            if (this.chargeTimer >= 120 && dist < 300) {
+            if (this.chargeTimer >= 140 && dist < 280) {
                 this.isCharging = true;
                 this.chargeTimer = 0;
                 this.chargeDir = { x: dx / dist, y: dy / dist };
             }
         } else {
-            this.x += this.chargeDir.x * (this.speed * 3.2);
-            this.y += this.chargeDir.y * (this.speed * 3.2);
+            this.x += this.chargeDir.x * (this.speed * 3.0);
+            this.y += this.chargeDir.y * (this.speed * 3.0);
 
             this.chargeTimer++;
-            if (this.chargeTimer >= 35) {
+            if (this.chargeTimer >= 30) {
                 this.isCharging = false;
                 this.chargeTimer = 0;
             }
@@ -235,21 +236,21 @@ export class Enemy extends Entity {
     updateFoxDemonAI(playerX, playerY, projectiles) {
         this.updateDirectAI(playerX, playerY);
         this.shootTimer++;
-        if (this.shootTimer >= 110) {
+        if (this.shootTimer >= 120) {
             this.shootTimer = 0;
             const dist = Math.hypot(playerX - this.x, playerY - this.y);
             if (projectiles && dist < 450) {
                 if (soundManager && soundManager.playShoot) soundManager.playShoot();
                 const baseAngle = Math.atan2(playerY - this.y, playerX - this.x);
-                [-0.25, 0, 0.25].forEach(spread => {
+                [-0.2, 0, 0.2].forEach(spread => {
                     const angle = baseAngle + spread;
                     projectiles.push({
                         type: 'foxfire',
                         x: this.x,
                         y: this.y,
-                        vx: Math.cos(angle) * 4.5,
-                        vy: Math.sin(angle) * 4.5,
-                        damage: this.damage,
+                        vx: Math.cos(angle) * 4.2,
+                        vy: Math.sin(angle) * 4.2,
+                        damage: this.damage * 0.65,
                         radius: 6,
                         color: '#ef4444',
                         dead: false
@@ -269,8 +270,9 @@ export class Enemy extends Entity {
             this.y += (dy / dist) * this.speed;
         }
 
+        // Balanced Cultist Sorcerer Attack (220-tick cooldown, reduced damage!)
         this.shootTimer++;
-        if (this.shootTimer >= 130) {
+        if (this.shootTimer >= 220) {
             this.shootTimer = 0;
             if (projectiles) {
                 projectiles.push({
@@ -279,9 +281,9 @@ export class Enemy extends Entity {
                     y: playerY,
                     vx: 0,
                     vy: 0,
-                    damage: this.damage * 1.5,
-                    radius: 35,
-                    timer: 50,
+                    damage: this.damage * 0.6,
+                    radius: 30,
+                    timer: 60,
                     color: '#b91c1c',
                     dead: false
                 });
@@ -292,7 +294,7 @@ export class Enemy extends Entity {
     updateGolemAI(playerX, playerY, projectiles) {
         this.updateDirectAI(playerX, playerY);
         this.shootTimer++;
-        if (this.shootTimer >= 140) {
+        if (this.shootTimer >= 160) {
             this.shootTimer = 0;
             if (projectiles) {
                 projectiles.push({
@@ -302,8 +304,8 @@ export class Enemy extends Entity {
                     vx: 0,
                     vy: 0,
                     currentRadius: 10,
-                    maxRadius: 160,
-                    damage: this.damage,
+                    maxRadius: 150,
+                    damage: this.damage * 0.7,
                     color: '#64748b',
                     dead: false
                 });
@@ -314,7 +316,7 @@ export class Enemy extends Entity {
     updateSpiderAI(playerX, playerY, projectiles) {
         this.updateDirectAI(playerX, playerY);
         this.shootTimer++;
-        if (this.shootTimer >= 90) {
+        if (this.shootTimer >= 110) {
             this.shootTimer = 0;
             const dist = Math.hypot(playerX - this.x, playerY - this.y);
             if (projectiles && dist < 380) {
@@ -324,10 +326,10 @@ export class Enemy extends Entity {
                     type: 'spiderWeb',
                     x: this.x,
                     y: this.y,
-                    vx: Math.cos(angle) * 4,
-                    vy: Math.sin(angle) * 4,
-                    damage: 4,
-                    radius: 12,
+                    vx: Math.cos(angle) * 3.8,
+                    vy: Math.sin(angle) * 3.8,
+                    damage: 3,
+                    radius: 10,
                     color: '#10b981',
                     dead: false
                 });
@@ -338,21 +340,21 @@ export class Enemy extends Entity {
     updateFrostDragonAI(playerX, playerY, projectiles) {
         this.updateDirectAI(playerX, playerY);
         this.shootTimer++;
-        if (this.shootTimer >= 150) {
+        if (this.shootTimer >= 170) {
             this.shootTimer = 0;
             const dist = Math.hypot(playerX - this.x, playerY - this.y);
             if (projectiles && dist < 500) {
                 if (soundManager && soundManager.playShoot) soundManager.playShoot();
                 const baseAngle = Math.atan2(playerY - this.y, playerX - this.x);
-                for (let a = -0.4; a <= 0.4; a += 0.15) {
+                for (let a = -0.3; a <= 0.3; a += 0.15) {
                     const angle = baseAngle + a;
                     projectiles.push({
                         type: 'frostBreath',
                         x: this.x,
                         y: this.y,
-                        vx: Math.cos(angle) * 5.5,
-                        vy: Math.sin(angle) * 5.5,
-                        damage: this.damage * 0.8,
+                        vx: Math.cos(angle) * 5.0,
+                        vy: Math.sin(angle) * 5.0,
+                        damage: this.damage * 0.6,
                         radius: 8,
                         color: '#38bdf8',
                         dead: false
@@ -388,14 +390,13 @@ export class Enemy extends Entity {
 
         const r = this.radius;
 
-        const squishX = 1.0 + Math.sin(this.animTimer * 2) * 0.08;
-        const squishY = 1.0 - Math.sin(this.animTimer * 2) * 0.08;
+        const squishX = 1.0 + Math.sin(this.animTimer * 2) * 0.06;
+        const squishY = 1.0 - Math.sin(this.animTimer * 2) * 0.06;
         const bobY = Math.abs(Math.sin(this.animTimer * 3)) * -3;
 
         ctx.save();
         ctx.translate(screenX, screenY + bobY);
 
-        // Standardized Facing Directions across all 10 enemy models!
         if (this.type === 'snake') {
             ctx.rotate(this.angle + Math.PI / 2);
         } else {

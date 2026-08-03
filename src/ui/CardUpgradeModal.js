@@ -1,10 +1,10 @@
 import { input } from '../core/Input.js';
 import { soundManager } from '../audio/SoundManager.js';
 
-// Preload All 8 2D Power Card Icon Assets with Zero-Stutter Offscreen Canvases
+// Instant Pre-Cached 2D Power Card Icon Assets (0ms Delay!)
 const powerCardImages = {};
 
-function loadPowerCardImage(id, src) {
+function preCachePowerCardImage(id, src) {
     const img = new Image();
     img.src = src;
     img.onload = () => {
@@ -48,15 +48,15 @@ function loadPowerCardImage(id, src) {
     };
 }
 
-// Load exact filenames from /assets/images/
-loadPowerCardImage('swords', '/assets/images/sword_icon.jpg');
-loadPowerCardImage('fireball', '/assets/images/fireball_icon.jpg');
-loadPowerCardImage('lightning', '/assets/images/thunder_icon.jpg');
-loadPowerCardImage('flameAura', '/assets/images/flame_ring_icon.jpg');
-loadPowerCardImage('boomerang', '/assets/images/boomerang_icon.jpg');
-loadPowerCardImage('stat_speed', '/assets/images/boots_speed_icon.jpg');
-loadPowerCardImage('stat_magnet', '/assets/images/gem_magnet_icon.jpg');
-loadPowerCardImage('stat_health', '/assets/images/vitality_elixir_icon.jpg');
+// Pre-cache all 8 Power Card icons on boot initialization
+preCachePowerCardImage('swords', '/assets/images/sword_icon.jpg');
+preCachePowerCardImage('fireball', '/assets/images/fireball_icon.jpg');
+preCachePowerCardImage('lightning', '/assets/images/thunder_icon.jpg');
+preCachePowerCardImage('flameAura', '/assets/images/flame_ring_icon.jpg');
+preCachePowerCardImage('boomerang', '/assets/images/boomerang_icon.jpg');
+preCachePowerCardImage('stat_speed', '/assets/images/boots_speed_icon.jpg');
+preCachePowerCardImage('stat_magnet', '/assets/images/gem_magnet_icon.jpg');
+preCachePowerCardImage('stat_health', '/assets/images/vitality_elixir_icon.jpg');
 
 export class CardUpgradeModal {
     constructor() {
@@ -135,7 +135,7 @@ export class CardUpgradeModal {
         const startX = (sw - totalW) / 2;
         const cardY = (sh - cardHeight) / 2 + 30;
 
-        // 3. Render 3 Centered Upgrade Cards
+        // 3. Instant Render 3 Centered Upgrade Cards
         options.forEach((card, idx) => {
             const cx = startX + idx * (cardWidth + gap);
             const isHovered = (idx === this.hoveredIndex);
@@ -176,7 +176,7 @@ export class CardUpgradeModal {
             ctx.font = '600 13px "Segoe UI", sans-serif';
             ctx.fillText(card.rarity || 'COMMON', cardWidth / 2, 70);
 
-            // Render 2D Power Icon Asset
+            // Instant 2D Power Icon Asset
             const iconImg = powerCardImages[card.id];
             const iconX = (cardWidth - 90) / 2;
             const iconY = 90;

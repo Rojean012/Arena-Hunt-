@@ -5,7 +5,7 @@ export class LevelManager {
     constructor() {
         this.totalGems = 0;
         this.currentTierIndex = 0;
-        this.targetGems = GameConfig.upgradeThresholds ? GameConfig.upgradeThresholds[0] : 10;
+        this.targetGems = 20;
         this.isLevelingUp = false;
         this.justOpened = false;
         this.cardOptions = [];
@@ -18,7 +18,7 @@ export class LevelManager {
     reset() {
         this.totalGems = 0;
         this.currentTierIndex = 0;
-        this.targetGems = GameConfig.upgradeThresholds ? GameConfig.upgradeThresholds[0] : 10;
+        this.targetGems = 20;
         this.isLevelingUp = false;
         this.justOpened = false;
         this.cardOptions = [];
@@ -36,10 +36,10 @@ export class LevelManager {
     addXP(amount, weaponManager) {
         this.totalGems += amount;
 
-        const thresholds = GameConfig.upgradeThresholds || [5, 12, 22, 35, 50, 70, 95, 125, 160, 200];
         if (this.totalGems >= this.targetGems) {
             this.currentTierIndex++;
-            this.targetGems = thresholds[this.currentTierIndex] || (this.targetGems + 40);
+            // Increment Emerald Goal progressively!
+            this.targetGems = Math.floor(this.targetGems * 1.35) + 12;
             
             if (soundManager && soundManager.playCoinCollect) {
                 soundManager.playCoinCollect();

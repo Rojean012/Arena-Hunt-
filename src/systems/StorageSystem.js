@@ -7,6 +7,14 @@ export class StorageSystem {
         this.data = this.load();
     }
 
+    static saveHighScore(score) {
+        return storageSystem.setHighScore(score);
+    }
+
+    static addCoins(amount) {
+        return storageSystem.addCoins(amount);
+    }
+
     load() {
         const defaults = {
             highScore: 0,
@@ -49,6 +57,10 @@ export class StorageSystem {
             return true;
         }
         return false;
+    }
+
+    saveHighScore(score) {
+        return this.setHighScore(score);
     }
 
     getTotalCoins() {
