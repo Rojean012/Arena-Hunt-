@@ -2,7 +2,7 @@ import { Entity } from './Entity.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { soundManager } from '../audio/SoundManager.js';
 
-// Preload All 10 High-Res 2D Enemy Asset Images & Multi-Step Downsample to Ultra-Sharp Pre-Cached Offscreen Sprites
+// Preload All 10 Enemy Asset Images with Instant Zero-Stutter Offscreen Canvases
 const enemySprites = {};
 
 function loadEnemySprite(type, src) {
@@ -10,13 +10,19 @@ function loadEnemySprite(type, src) {
     img.src = src;
     img.onload = () => {
         try {
-            const fullCanvas = document.createElement('canvas');
-            fullCanvas.width = img.width;
-            fullCanvas.height = img.height;
-            const fullCtx = fullCanvas.getContext('2d');
-            fullCtx.drawImage(img, 0, 0);
+            // Hardware-accelerated fast downscale to 256x256 (384x384 for bosses)
+            const targetSize = ['stone_golem', 'frost_dragon', 'bear'].includes(type) ? 384 : 256;
+            const canvas = document.createElement('canvas');
+            canvas.width = targetSize;
+            canvas.height = targetSize;
+            const ctx = canvas.getContext('2d');
 
-            const imgData = fullCtx.getImageData(0, 0, fullCanvas.width, fullCanvas.height);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, targetSize, targetSize);
+
+            // Fast single-pass background keying on downscaled sprite (Instant!)
+            const imgData = ctx.getImageData(0, 0, targetSize, targetSize);
             const data = imgData.data;
 
             const bgR = data[0];
@@ -33,36 +39,20 @@ function loadEnemySprite(type, src) {
                 const db = Math.abs(b - bgB);
                 const diff = Math.max(dr, Math.max(dg, db));
 
-                if (r > 240 && g > 240 && b > 240) {
+                if ((r > 240 && g > 240 && b > 240) || diff < 24) {
                     data[i + 3] = 0;
-                } else if (diff < 18) {
-                    data[i + 3] = 0;
-                } else if (diff < 42) {
-                    const alpha = Math.floor(((diff - 18) / 24) * 255);
-                    data[i + 3] = Math.min(data[i + 3], alpha);
                 }
             }
 
-            fullCtx.putImageData(imgData, 0, 0);
-
-            const targetSize = ['stone_golem', 'frost_dragon', 'bear'].includes(type) ? 384 : 256;
-            const sharpCanvas = document.createElement('canvas');
-            sharpCanvas.width = targetSize;
-            sharpCanvas.height = targetSize;
-            const sharpCtx = sharpCanvas.getContext('2d');
-
-            sharpCtx.imageSmoothingEnabled = true;
-            sharpCtx.imageSmoothingQuality = 'high';
-            sharpCtx.drawImage(fullCanvas, 0, 0, targetSize, targetSize);
-
-            enemySprites[type] = sharpCanvas;
+            ctx.putImageData(imgData, 0, 0);
+            enemySprites[type] = canvas;
         } catch (e) {
             enemySprites[type] = img;
         }
     };
 }
 
-// Load all 10 Enemy Models
+// Load all 10 Enemy Models from /assets/images/new_models/
 loadEnemySprite('slime', '/assets/images/new_models/slime_enemy.png');
 loadEnemySprite('miniSlime', '/assets/images/new_models/slime_enemy.png');
 loadEnemySprite('goblin', '/assets/images/new_models/goblin_enemy.png');
@@ -110,13 +100,13 @@ export class Enemy extends Entity {
         const dy = playerY - this.y;
         const dist = Math.hypot(dx, dy);
 
-        // Smooth angle lerp (prevents serpent spinning near player center!)
-        if (dist > 15) {
+        // Smooth head-first orientation calculation
+        if (dist > 10) {
             const targetAngle = Math.atan2(dy, dx);
             let diff = targetAngle - this.angle;
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
-            this.angle += diff * 0.15;
+            this.angle += diff * 0.2;
             this.facingRight = (dx >= 0);
         }
 
@@ -399,8 +389,9 @@ export class Enemy extends Entity {
         ctx.save();
         ctx.translate(screenX, screenY + bobY);
 
+        // Correct Head-First Alignment for Viper Serpent & Flipping Mobs
         if (this.type === 'snake') {
-            ctx.rotate(this.angle - Math.PI / 4);
+            ctx.rotate(this.angle + Math.PI / 2);
         } else if (['goblin', 'bear', 'ghost', 'fox_demon', 'cultist_sorcerer', 'stone_golem', 'spider_fiend', 'frost_dragon'].includes(this.type)) {
             if (this.facingRight) {
                 ctx.scale(-1, 1);

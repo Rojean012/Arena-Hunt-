@@ -10,12 +10,14 @@ function loadWeaponImage(id, src) {
     img.onload = () => {
         try {
             const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
+            canvas.width = 128;
+            canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, 128, 128);
 
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const imgData = ctx.getImageData(0, 0, 128, 128);
             const data = imgData.data;
 
             const bgR = data[0];
@@ -32,7 +34,7 @@ function loadWeaponImage(id, src) {
                 const db = Math.abs(b - bgB);
 
                 if ((dr < 30 && dg < 30 && db < 30) || (r < 25 && g < 25 && b < 25)) {
-                    data[i + 3] = 0; // Transparent background
+                    data[i + 3] = 0;
                 }
             }
 
@@ -100,6 +102,7 @@ export class WeaponManager {
         } else if (weaponId === 'lightning') {
             w.config.count++;
             w.config.baseDamage += 18;
+            w.config.cooldown = Math.max(30, w.config.cooldown - 5);
         } else if (weaponId === 'flameAura') {
             w.config.radius += 12;
             w.config.baseDamage += 6;
@@ -145,7 +148,7 @@ export class WeaponManager {
             }
         }
 
-        // 2. Flame Aura Ring
+        // 2. Flame Aura Ring (Continuous 8-frame burn tick!)
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
             w.cooldownTimer++;
@@ -157,13 +160,13 @@ export class WeaponManager {
                 particles.spawnFlameEmbers(fx, fy);
             }
 
-            if (w.cooldownTimer >= w.config.cooldown) {
+            if (w.cooldownTimer >= 8) { // Fast continuous 8-frame damage ticks
                 w.cooldownTimer = 0;
                 enemies.forEach(enemy => {
                     if (enemy.dead) return;
                     if (Math.hypot(enemy.x - player.x, enemy.y - player.y) < w.config.radius + enemy.radius) {
-                        const killed = enemy.takeDamage(w.config.baseDamage);
-                        particles.spawnBlood(enemy.x, enemy.y, 3);
+                        const killed = enemy.takeDamage(w.config.baseDamage * 0.5);
+                        particles.spawnBlood(enemy.x, enemy.y, 2);
                         if (killed && onEnemyDefeated) {
                             onEnemyDefeated(enemy);
                         }
@@ -226,16 +229,18 @@ export class WeaponManager {
             }
         }
 
-        // 5. Thunder Bolt
+        // 5. Thunder Bolt (High Frequency 45-frame strikes!)
         if (this.weapons['lightning']) {
             const w = this.weapons['lightning'];
             w.cooldownTimer++;
-            if (w.cooldownTimer >= w.config.cooldown) {
+            if (w.cooldownTimer >= 45) { // Rapid 45-frame strikes
                 w.cooldownTimer = 0;
                 const targets = this.findRandomEnemies(player, enemies, w.config.count, w.config.range);
                 targets.forEach(target => {
                     const killed = target.takeDamage(w.config.baseDamage);
                     particles.spawnMuzzleFlash(target.x, target.y, 0);
+                    if (soundManager && soundManager.playShoot) soundManager.playShoot();
+
                     if (killed && onEnemyDefeated) {
                         onEnemyDefeated(target);
                     }
@@ -334,15 +339,15 @@ export class WeaponManager {
         const px = camera.getScreenX(player.x, canvasWidth);
         const py = camera.getScreenY(player.y, canvasHeight);
 
-        // 1. Flame Aura Ring with 2D Image Icon Asset
+        // 1. High-Impact Flame Aura Ring Rendering
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
             ctx.save();
 
             const auraGrad = ctx.createRadialGradient(px, py, w.config.radius * 0.4, px, py, w.config.radius);
-            auraGrad.addColorStop(0, 'rgba(239, 68, 68, 0.05)');
-            auraGrad.addColorStop(0.7, 'rgba(249, 115, 22, 0.25)');
-            auraGrad.addColorStop(1, 'rgba(239, 68, 68, 0.40)');
+            auraGrad.addColorStop(0, 'rgba(239, 68, 68, 0.08)');
+            auraGrad.addColorStop(0.7, 'rgba(249, 115, 22, 0.35)');
+            auraGrad.addColorStop(1, 'rgba(239, 68, 68, 0.55)');
 
             ctx.beginPath();
             ctx.arc(px, py, w.config.radius, 0, Math.PI * 2);
@@ -350,18 +355,17 @@ export class WeaponManager {
             ctx.fill();
 
             ctx.strokeStyle = '#f97316';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 3.5;
             ctx.stroke();
 
-            // Render 2D Flame Ring Icon Asset in center of halo
             const auraImg = weaponImages['flameAura'];
             if (auraImg && (auraImg.complete || auraImg.width)) {
                 ctx.save();
-                ctx.globalAlpha = 0.35;
+                ctx.globalAlpha = 0.50;
                 ctx.beginPath();
-                ctx.arc(px, py, w.config.radius * 0.7, 0, Math.PI * 2);
+                ctx.arc(px, py, w.config.radius * 0.75, 0, Math.PI * 2);
                 ctx.clip();
-                ctx.drawImage(auraImg, px - w.config.radius * 0.7, py - w.config.radius * 0.7, w.config.radius * 1.4, w.config.radius * 1.4);
+                ctx.drawImage(auraImg, px - w.config.radius * 0.75, py - w.config.radius * 0.75, w.config.radius * 1.5, w.config.radius * 1.5);
                 ctx.restore();
             }
 
@@ -376,7 +380,7 @@ export class WeaponManager {
             const swordImg = weaponImages['swords'];
 
             ctx.save();
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(px, py, radius, 0, Math.PI * 2);
@@ -393,7 +397,6 @@ export class WeaponManager {
                 ctx.rotate(angle + Math.PI / 2);
 
                 if (swordImg && (swordImg.complete || swordImg.width)) {
-                    // Render 2D Jiuyou Sword Image Sprite
                     ctx.shadowColor = 'rgba(56, 189, 248, 0.8)';
                     ctx.shadowBlur = 10;
                     ctx.drawImage(swordImg, -20, -28, 40, 56);
@@ -408,7 +411,7 @@ export class WeaponManager {
             }
         }
 
-        // 3. Projectiles with 2D Image Icon Assets (Fireballs & Boomerangs)
+        // 3. Projectiles (Fireballs & Boomerangs)
         this.projectiles.forEach(p => {
             const sx = camera.getScreenX(p.x, canvasWidth);
             const sy = camera.getScreenY(p.y, canvasHeight);
@@ -449,7 +452,7 @@ export class WeaponManager {
             ctx.restore();
         });
 
-        // 4. Lightning Strikes with 2D Image Asset Impact
+        // 4. High-Impact Thunder Bolt Lightning Strikes
         this.effects.forEach(e => {
             if (e.type === 'lightning') {
                 const sx = camera.getScreenX(e.x, canvasWidth);
@@ -457,25 +460,25 @@ export class WeaponManager {
                 const thunderImg = weaponImages['lightning'];
 
                 ctx.save();
-                ctx.shadowColor = 'rgba(250, 204, 21, 0.9)';
-                ctx.shadowBlur = 18;
+                ctx.shadowColor = 'rgba(250, 204, 21, 0.95)';
+                ctx.shadowBlur = 22;
 
                 ctx.strokeStyle = '#facc15';
-                ctx.lineWidth = 4;
+                ctx.lineWidth = 5;
                 ctx.beginPath();
-                ctx.moveTo(sx, sy - 180);
-                ctx.lineTo(sx - 15, sy - 120);
-                ctx.lineTo(sx + 15, sy - 60);
-                ctx.lineTo(sx - 5, sy - 20);
+                ctx.moveTo(sx, sy - 190);
+                ctx.lineTo(sx - 18, sy - 130);
+                ctx.lineTo(sx + 18, sy - 65);
+                ctx.lineTo(sx - 6, sy - 20);
                 ctx.lineTo(sx, sy);
                 ctx.stroke();
 
                 ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 2.5;
                 ctx.stroke();
 
                 if (thunderImg && (thunderImg.complete || thunderImg.width)) {
-                    ctx.drawImage(thunderImg, sx - 24, sy - 24, 48, 48);
+                    ctx.drawImage(thunderImg, sx - 28, sy - 28, 56, 56);
                 }
 
                 ctx.restore();
