@@ -37,25 +37,27 @@ export class WeaponManager {
 
     upgradeWeapon(weaponId) {
         const w = this.weapons[weaponId];
-        if (!w) return;
+        if (!w || w.level >= 10) return;
 
         w.level++;
         if (weaponId === 'swords') {
-            w.config.count++;
-            w.config.baseDamage += 6;
+            if (w.level % 2 === 0) w.config.count++;
+            w.config.baseDamage += 8;
+            w.config.spinSpeed += 0.005;
         } else if (weaponId === 'fireball') {
-            w.config.count++;
-            w.config.baseDamage += 12;
-            w.config.cooldown = Math.max(20, w.config.cooldown - 5);
+            if (w.level % 3 === 0) w.config.count++;
+            w.config.baseDamage += 15;
+            w.config.cooldown = Math.max(15, w.config.cooldown - 4);
         } else if (weaponId === 'lightning') {
             w.config.count++;
-            w.config.baseDamage += 15;
+            w.config.baseDamage += 18;
         } else if (weaponId === 'flameAura') {
-            w.config.radius += 15;
-            w.config.baseDamage += 4;
+            w.config.radius += 12;
+            w.config.baseDamage += 6;
         } else if (weaponId === 'boomerang') {
-            w.config.count++;
-            w.config.baseDamage += 10;
+            if (w.level % 2 === 0) w.config.count++;
+            w.config.baseDamage += 14;
+            w.config.cooldown = Math.max(25, w.config.cooldown - 3);
         }
     }
 
@@ -100,7 +102,6 @@ export class WeaponManager {
             const w = this.weapons['flameAura'];
             w.cooldownTimer++;
 
-            // Spawn ambient rising flame embers around player
             if (Math.random() < 0.4) {
                 const fa = Math.random() * Math.PI * 2;
                 const fx = player.x + Math.cos(fa) * (w.config.radius * Math.random());
@@ -290,7 +291,6 @@ export class WeaponManager {
             const w = this.weapons['flameAura'];
             ctx.save();
 
-            // Outer Pulsating Fire Halo Gradient
             const auraGrad = ctx.createRadialGradient(px, py, w.config.radius * 0.4, px, py, w.config.radius);
             auraGrad.addColorStop(0, 'rgba(239, 68, 68, 0.05)');
             auraGrad.addColorStop(0.7, 'rgba(249, 115, 22, 0.25)');
@@ -301,7 +301,6 @@ export class WeaponManager {
             ctx.fillStyle = auraGrad;
             ctx.fill();
 
-            // Glowing Outer Ring Stroke
             ctx.strokeStyle = '#f97316';
             ctx.lineWidth = 3;
             ctx.stroke();
@@ -321,7 +320,6 @@ export class WeaponManager {
             const swordCount = w.config.count;
             const radius = w.config.radius;
 
-            // Draw Orbit Qi Arc Ring
             ctx.save();
             ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
             ctx.lineWidth = 2;
@@ -339,22 +337,18 @@ export class WeaponManager {
                 ctx.translate(sx, sy);
                 ctx.rotate(angle + Math.PI / 2);
 
-                // Blade Outer Glow
                 ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
                 ctx.fillRect(-6, -26, 12, 34);
 
-                // Dual-Tone Energy Blade
                 ctx.fillStyle = '#0284c7';
                 ctx.fillRect(-4, -24, 8, 30);
 
                 ctx.fillStyle = '#38bdf8';
                 ctx.fillRect(-2, -24, 4, 30);
 
-                // Pure White Core Line
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(-1, -22, 2, 28);
 
-                // Gold Xianxia Crossguard & Hilt
                 ctx.fillStyle = '#facc15';
                 ctx.fillRect(-9, 4, 18, 5);
                 ctx.fillStyle = '#eab308';
@@ -364,7 +358,7 @@ export class WeaponManager {
             }
         }
 
-        // 3. High-Definition Projectiles (Arcane Fireballs & Flying Boomerangs)
+        // 3. High-Definition Projectiles
         this.projectiles.forEach(p => {
             const sx = camera.getScreenX(p.x, canvasWidth);
             const sy = camera.getScreenY(p.y, canvasHeight);
@@ -375,7 +369,6 @@ export class WeaponManager {
             if (p.type === 'boomerang') {
                 ctx.rotate(p.spinAngle);
 
-                // Dual Crescent Energy Blades
                 ctx.shadowColor = 'rgba(0, 255, 255, 0.6)';
                 ctx.shadowBlur = 12;
 
@@ -391,7 +384,6 @@ export class WeaponManager {
                 ctx.arc(0, 0, p.radius, 0.2, Math.PI * 1.5);
                 ctx.stroke();
             } else if (p.type === 'fireball') {
-                // Outer Solar Glow
                 ctx.shadowColor = 'rgba(249, 115, 22, 0.8)';
                 ctx.shadowBlur = 16;
 
@@ -400,7 +392,6 @@ export class WeaponManager {
                 ctx.fillStyle = 'rgba(249, 115, 22, 0.4)';
                 ctx.fill();
 
-                // Fireball Core Gradient
                 const fbGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, p.radius);
                 fbGrad.addColorStop(0, '#fef08a');
                 fbGrad.addColorStop(0.5, '#f97316');
@@ -426,7 +417,6 @@ export class WeaponManager {
                 ctx.shadowColor = 'rgba(250, 204, 21, 0.8)';
                 ctx.shadowBlur = 18;
 
-                // Multi-Branch Electric Bolt Strike
                 ctx.strokeStyle = '#facc15';
                 ctx.lineWidth = 4;
                 ctx.beginPath();
@@ -437,7 +427,6 @@ export class WeaponManager {
                 ctx.lineTo(sx, sy);
                 ctx.stroke();
 
-                // Inner White High-Voltage Core
                 ctx.strokeStyle = '#ffffff';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
@@ -448,7 +437,6 @@ export class WeaponManager {
                 ctx.lineTo(sx, sy);
                 ctx.stroke();
 
-                // Ground Impact Energy Ring
                 ctx.beginPath();
                 ctx.arc(sx, sy, 22, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(250, 204, 21, 0.3)';

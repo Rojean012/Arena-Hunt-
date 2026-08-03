@@ -45,7 +45,7 @@ export class LevelManager {
     generateCardOptions(weaponManager) {
         const pool = [];
 
-        // 1. Weapon Options
+        // 1. Weapon Options (Cap up to LEVEL 10!)
         Object.keys(GameConfig.weapons).forEach(id => {
             const wConfig = GameConfig.weapons[id];
             const currentLvl = weaponManager.getWeaponLevel(id);
@@ -61,14 +61,14 @@ export class LevelManager {
                     level: 1,
                     rarity: 'RARE'
                 });
-            } else if (currentLvl < 5) {
-                // Upgrade weapon
+            } else if (currentLvl < 10) {
+                // Upgrade weapon up to Level 10!
                 pool.push({
                     type: 'UPGRADE',
                     id: id,
                     icon: wConfig.icon,
                     name: `${wConfig.name}`,
-                    description: `Increase attack damage, speed & count.`,
+                    description: `Increase damage, speed & count (LVL ${currentLvl + 1}).`,
                     level: currentLvl + 1,
                     rarity: 'COMMON'
                 });

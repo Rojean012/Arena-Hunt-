@@ -2,7 +2,7 @@ import { Entity } from './Entity.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { soundManager } from '../audio/SoundManager.js';
 
-// Preload New 2D Enemy Asset Images with Automatic Offscreen Background Removal
+// Preload New 2D Enemy Asset Images with Smooth Feathered Offscreen Background Removal
 const enemySprites = {};
 
 function loadEnemySprite(type, src) {
@@ -24,7 +24,7 @@ function loadEnemySprite(type, src) {
             const bgG = data[1];
             const bgB = data[2];
 
-            // Key out background pixels
+            // Smooth Feathered Chroma-Keying (Eliminates harsh cutoffs, especially on Ghosts!)
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
                 const g = data[i + 1];
@@ -33,9 +33,17 @@ function loadEnemySprite(type, src) {
                 const dr = Math.abs(r - bgR);
                 const dg = Math.abs(g - bgG);
                 const db = Math.abs(b - bgB);
+                const diff = Math.max(dr, Math.max(dg, db));
 
-                if ((dr < 40 && dg < 40 && db < 40) || (r > 195 && g > 195 && b > 195)) {
-                    data[i + 3] = 0; // Make transparent
+                // Pure White or Corner Background Match
+                if (r > 235 && g > 235 && b > 235) {
+                    data[i + 3] = 0;
+                } else if (diff < 20) {
+                    data[i + 3] = 0;
+                } else if (diff < 50) {
+                    // Feathered soft edge transition
+                    const alpha = Math.floor(((diff - 20) / 30) * 255);
+                    data[i + 3] = Math.min(data[i + 3], alpha);
                 }
             }
 
@@ -82,7 +90,7 @@ export class Enemy extends Entity {
         this.flankAngle = Math.random() * Math.PI * 2;
         this.hitFlash = 0;
         
-        // Orientation tracking
+        // Instant orientation tracking
         this.angle = 0;
         this.facingRight = true;
     }
@@ -91,6 +99,7 @@ export class Enemy extends Entity {
         this.animTimer += 0.12;
         if (this.hitFlash > 0) this.hitFlash--;
 
+        // Calculate INSTANT orientation toward player
         const dx = playerX - this.x;
         const dy = playerY - this.y;
         this.angle = Math.atan2(dy, dx);
@@ -227,7 +236,7 @@ export class Enemy extends Entity {
     render(ctx, screenX, screenY) {
         const r = this.radius;
 
-        // Monster Action Animations (Squish/Stretch/Bob)
+        // Monster Action Animations
         const squishX = 1.0 + Math.sin(this.animTimer * 2) * 0.08;
         const squishY = 1.0 - Math.sin(this.animTimer * 2) * 0.08;
         const bobY = Math.abs(Math.sin(this.animTimer * 3)) * -3;
@@ -235,18 +244,15 @@ export class Enemy extends Entity {
         ctx.save();
         ctx.translate(screenX, screenY + bobY);
 
-        // Dynamic Sprite Orientation Adjustment per Monster Type
+        // Instant Dynamic Sprite Orientation per Monster Type
         if (this.type === 'snake') {
-            // Snakes slither facing movement angle
             ctx.rotate(this.angle + Math.PI / 2);
         } else if (this.type === 'goblin' || this.type === 'bear') {
-            // Goblins & Bears flip left/right towards player
             if (!this.facingRight) {
                 ctx.scale(-1, 1);
             }
         } else if (this.type === 'ghost') {
-            // Ghosts tilt float towards direction
-            ctx.rotate(Math.sin(this.animTimer) * 0.15);
+            ctx.rotate(Math.sin(this.animTimer * 1.5) * 0.12);
             if (!this.facingRight) {
                 ctx.scale(-1, 1);
             }
@@ -285,7 +291,7 @@ export class Enemy extends Entity {
 
         ctx.restore();
 
-        // Monster Health Bar (Rendered un-rotated above monster)
+        // Monster Health Bar
         if (this.health < this.maxHealth) {
             ctx.save();
             ctx.translate(screenX, screenY + bobY);
