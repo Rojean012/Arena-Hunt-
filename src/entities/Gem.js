@@ -1,80 +1,77 @@
 import { Entity } from './Entity.js';
+import { GameConfig } from '../config/GameConfig.js';
+
+// Preload Emerald Gem 2D Asset Image
+const gemImage = new Image();
+gemImage.src = '/assets/images/emerald_gem.jpg';
 
 export class Gem extends Entity {
-    constructor(x, y, type = 'emerald') {
-        let value = 1;
-        let color = '#2ecc71'; // Emerald Green
-        let radius = 9;
+    constructor(x, y, gemType = 'emerald') {
+        const spec = GameConfig.gems[gemType] || GameConfig.gems.emerald;
+        super(x, y, spec.radius, spec.color);
 
-        if (type === 'large_emerald') {
-            value = 3;
-            color = '#27ae60';
-            radius = 12;
-        } else if (type === 'boss_emerald') {
-            value = 5;
-            color = '#1abc9c';
-            radius = 15;
-        }
-
-        super(x, y, radius, color);
-        this.type = type;
-        this.value = value;
-        this.bob = Math.random() * Math.PI * 2;
-        this.isMagnetized = false;
+        this.value = spec.value;
+        this.magnetSpeed = 0;
+        this.floatOffset = Math.random() * Math.PI * 2;
+        this.pulseTimer = 0;
     }
 
     update(playerX, playerY, magnetRadius) {
-        this.bob += 0.08;
+        this.floatOffset += 0.05;
+        this.pulseTimer += 0.08;
 
-        const dist = Math.hypot(playerX - this.x, playerY - this.y);
-        
+        const dx = playerX - this.x;
+        const dy = playerY - this.y;
+        const dist = Math.hypot(dx, dy);
+
+        // Magnetic Pull when player is close
         if (dist < magnetRadius) {
-            this.isMagnetized = true;
-        }
-
-        if (this.isMagnetized) {
-            const angle = Math.atan2(playerY - this.y, playerX - this.x);
-            const speed = Math.max(9, (1 - dist / magnetRadius) * 18);
-            this.x += Math.cos(angle) * speed;
-            this.y += Math.sin(angle) * speed;
+            this.magnetSpeed = Math.min(10, this.magnetSpeed + 0.6);
+            this.x += (dx / dist) * this.magnetSpeed;
+            this.y += (dy / dist) * this.magnetSpeed;
+        } else {
+            this.magnetSpeed = Math.max(0, this.magnetSpeed - 0.2);
         }
     }
 
     render(ctx, screenX, screenY) {
-        const sy = screenY - Math.sin(this.bob) * 4;
+        const floatY = Math.sin(this.floatOffset) * 3;
+        const drawX = screenX;
+        const drawY = screenY + floatY;
         const r = this.radius;
 
         ctx.save();
-        
+        ctx.translate(drawX, drawY);
+
         // Emerald Glow Aura
+        const pulseR = r + 4 + Math.sin(this.pulseTimer) * 2;
         ctx.beginPath();
-        ctx.arc(screenX, sy, r + 5, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(46, 204, 113, 0.4)';
+        ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(46, 204, 113, 0.35)';
         ctx.fill();
 
-        // Faceted Emerald Diamond Shape
-        ctx.beginPath();
-        ctx.moveTo(screenX, sy - r * 1.2);
-        ctx.lineTo(screenX + r * 0.9, sy - r * 0.4);
-        ctx.lineTo(screenX + r * 0.9, sy + r * 0.4);
-        ctx.lineTo(screenX, sy + r * 1.2);
-        ctx.lineTo(screenX - r * 0.9, sy + r * 0.4);
-        ctx.lineTo(screenX - r * 0.9, sy - r * 0.4);
-        ctx.closePath();
+        // Render High-Definition 2D Emerald Gem Image Asset!
+        if (gemImage.complete && gemImage.naturalWidth !== 0) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 1.2, 0, Math.PI * 2);
+            ctx.clip(); // Clip image inside gem circle
 
-        ctx.fillStyle = '#2ecc71';
-        ctx.fill();
-        ctx.strokeStyle = '#a3e4d7';
-        ctx.lineWidth = 1.8;
-        ctx.stroke();
+            ctx.drawImage(gemImage, -r * 1.4, -r * 1.4, r * 2.8, r * 2.8);
+            ctx.restore();
 
-        // Inner Facet Sparkle Line
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(screenX - r * 0.5, sy - r * 0.2);
-        ctx.lineTo(screenX + r * 0.3, sy - r * 0.5);
-        ctx.stroke();
+            ctx.strokeStyle = '#a3e4d7';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 1.2, 0, Math.PI * 2);
+            ctx.stroke();
+        } else {
+            // Fallback rendering
+            ctx.fillStyle = '#2ecc71';
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         ctx.restore();
     }
