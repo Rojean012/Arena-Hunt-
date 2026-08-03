@@ -63,12 +63,14 @@ export class SpawnerSystem {
         let type = 'slime';
         const rand = Math.random();
         
-        if (this.difficultyTier >= 4 && rand < 0.2) {
+        if (this.difficultyTier >= 4 && rand < 0.15) {
             type = 'bear';
         } else if (this.difficultyTier >= 3 && rand < 0.35) {
             type = 'ghost';
-        } else if (this.difficultyTier >= 2 && rand < 0.5) {
-            type = 'goblin';
+        } else if (this.difficultyTier >= 2 && rand < 0.65) {
+            type = rand < 0.35 ? 'snake' : 'goblin';
+        } else if (rand < 0.30) {
+            type = 'snake'; // Viper Serpents can spawn from Wave 1!
         }
 
         enemies.push(new Enemy(x, y, type));

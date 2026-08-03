@@ -40,6 +40,15 @@ export const GameConfig = {
             name: 'Goblin Archer',
             gemType: 'emerald'
         },
+        snake: {
+            radius: 15,
+            speed: 1.8,
+            health: 16,
+            damage: 10,
+            color: '#a855f7',
+            name: 'Viper Serpent',
+            gemType: 'emerald'
+        },
         ghost: {
             radius: 20,
             speed: 1.5,

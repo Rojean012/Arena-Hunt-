@@ -24,7 +24,7 @@ function loadEnemySprite(type, src) {
             const bgG = data[1];
             const bgB = data[2];
 
-            // Smooth Feathered Chroma-Keying (Eliminates harsh cutoffs, especially on Ghosts!)
+            // Smooth Feathered Chroma-Keying
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
                 const g = data[i + 1];
@@ -35,13 +35,11 @@ function loadEnemySprite(type, src) {
                 const db = Math.abs(b - bgB);
                 const diff = Math.max(dr, Math.max(dg, db));
 
-                // Pure White or Corner Background Match
                 if (r > 235 && g > 235 && b > 235) {
                     data[i + 3] = 0;
                 } else if (diff < 20) {
                     data[i + 3] = 0;
                 } else if (diff < 50) {
-                    // Feathered soft edge transition
                     const alpha = Math.floor(((diff - 20) / 30) * 255);
                     data[i + 3] = Math.min(data[i + 3], alpha);
                 }
@@ -69,7 +67,7 @@ export class Enemy extends Entity {
         if (!spec) {
             spec = type === 'miniSlime' 
                 ? { radius: 11, speed: 1.4, health: 6, damage: 4, color: '#2ecc71', name: 'Mini Slime' }
-                : (type === 'snake' ? { radius: 13, speed: 1.8, health: 12, damage: 8, color: '#a855f7', name: 'Viper Serpent' } : GameConfig.enemies.slime);
+                : (type === 'snake' ? { radius: 15, speed: 1.8, health: 16, damage: 10, color: '#a855f7', name: 'Viper Serpent' } : GameConfig.enemies.slime);
         }
 
         super(x, y, spec.radius, spec.color);
@@ -244,16 +242,13 @@ export class Enemy extends Entity {
         ctx.save();
         ctx.translate(screenX, screenY + bobY);
 
-        // Instant Dynamic Sprite Orientation per Monster Type
+        // Corrected Dynamic Sprite Orientation per Monster Type
         if (this.type === 'snake') {
-            ctx.rotate(this.angle + Math.PI / 2);
-        } else if (this.type === 'goblin' || this.type === 'bear') {
-            if (!this.facingRight) {
-                ctx.scale(-1, 1);
-            }
-        } else if (this.type === 'ghost') {
-            ctx.rotate(Math.sin(this.animTimer * 1.5) * 0.12);
-            if (!this.facingRight) {
+            // Serpent head points directly at movement angle
+            ctx.rotate(this.angle - Math.PI / 4);
+        } else if (this.type === 'goblin' || this.type === 'bear' || this.type === 'ghost') {
+            // Raw image sprites face LEFT by default. When player is right (facingRight is true), flip X axis!
+            if (this.facingRight) {
                 ctx.scale(-1, 1);
             }
         }
