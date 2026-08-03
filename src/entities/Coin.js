@@ -16,12 +16,12 @@ export class Coin extends Entity {
         this.spinTimer += 0.1;
         this.floatOffset += 0.05;
 
-        // Magnet attraction when close to player
+        // Magnet attraction when close to player (Prevent NaN!)
         const dx = playerX - this.x;
         const dy = playerY - this.y;
         const dist = Math.hypot(dx, dy);
 
-        if (dist < 100) {
+        if (dist > 0.1 && dist < 100) {
             this.x += (dx / dist) * 7;
             this.y += (dy / dist) * 7;
         }
@@ -32,6 +32,8 @@ export class Coin extends Entity {
     }
 
     render(ctx, screenX, screenY) {
+        if (isNaN(screenX) || isNaN(screenY)) return;
+
         const floatY = Math.sin(this.floatOffset) * 3;
         const drawX = screenX;
         const drawY = screenY + floatY;

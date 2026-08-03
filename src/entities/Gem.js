@@ -24,9 +24,9 @@ export class Gem extends Entity {
         const dy = playerY - this.y;
         const dist = Math.hypot(dx, dy);
 
-        // Magnetic Pull when player is close
-        if (dist < magnetRadius) {
-            this.magnetSpeed = Math.min(10, this.magnetSpeed + 0.6);
+        // Magnetic Pull when player is close (Check dist > 0.1 to PREVENT NaN bugs!)
+        if (dist > 0.1 && dist < magnetRadius) {
+            this.magnetSpeed = Math.min(12, this.magnetSpeed + 0.8);
             this.x += (dx / dist) * this.magnetSpeed;
             this.y += (dy / dist) * this.magnetSpeed;
         } else {
@@ -35,6 +35,8 @@ export class Gem extends Entity {
     }
 
     render(ctx, screenX, screenY) {
+        if (isNaN(screenX) || isNaN(screenY)) return;
+
         const floatY = Math.sin(this.floatOffset) * 3;
         const drawX = screenX;
         const drawY = screenY + floatY;
@@ -55,7 +57,7 @@ export class Gem extends Entity {
             ctx.save();
             ctx.beginPath();
             ctx.arc(0, 0, r * 1.2, 0, Math.PI * 2);
-            ctx.clip(); // Clip image inside gem circle
+            ctx.clip();
 
             ctx.drawImage(gemImage, -r * 1.4, -r * 1.4, r * 2.8, r * 2.8);
             ctx.restore();

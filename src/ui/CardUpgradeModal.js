@@ -7,10 +7,12 @@ cardBgImage.src = '/assets/images/card_bg.jpg';
 export class CardUpgradeModal {
     constructor() {
         this.hoveredIndex = -1;
+        this.cardAnim = 0;
     }
 
     update(levelManager, weaponManager, player) {
         if (!levelManager || !levelManager.isLevelingUp) return;
+        this.cardAnim += 0.05;
 
         const options = levelManager.currentOptions || levelManager.cardOptions;
         if (!options || options.length === 0) return;
@@ -19,16 +21,16 @@ export class CardUpgradeModal {
         const mouseX = input.mouse.x;
         const mouseY = input.mouse.y;
 
-        const cardW = 210;
-        const cardH = 300;
-        const totalW = options.length * cardW + (options.length - 1) * 30;
+        const cardW = 220;
+        const cardH = 310;
+        const totalW = options.length * cardW + (options.length - 1) * 25;
         const startX = (window.innerWidth - totalW) / 2;
         const startY = (window.innerHeight - cardH) / 2;
 
         this.hoveredIndex = -1;
 
         for (let i = 0; i < options.length; i++) {
-            const cx = startX + i * (cardW + 30);
+            const cx = startX + i * (cardW + 25);
             const cy = startY;
 
             if (mouseX >= cx && mouseX <= cx + cardW && mouseY >= cy && mouseY <= cy + cardH) {
@@ -54,83 +56,110 @@ export class CardUpgradeModal {
 
         ctx.save();
 
-        // Dark Modal Backdrop Overlay
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        // Dark Backdrop Overlay
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-        // Header Title
+        // Poppy Header Title
         ctx.textAlign = 'center';
         ctx.fillStyle = '#f1c40f';
         ctx.font = 'bold 36px Arial';
-        ctx.fillText('⚡ LEVEL UP! CHOOSE YOUR UPGRADE ⚡', canvasWidth / 2, canvasHeight * 0.18);
+        ctx.fillText('✨ LEVEL UP! CHOOSE POWER ✨', canvasWidth / 2, canvasHeight * 0.16);
 
         ctx.fillStyle = '#cbd5e1';
-        ctx.font = '16px Arial';
-        ctx.fillText('Pick 1 power to enhance Wang Lin during battle', canvasWidth / 2, canvasHeight * 0.22);
+        ctx.font = 'bold 15px Arial';
+        ctx.fillText('Select 1 upgrade to boost Wang Lin during battle', canvasWidth / 2, canvasHeight * 0.20);
 
-        // Render 3 Choice Upgrade Cards
-        const cardW = 210;
-        const cardH = 300;
-        const totalW = options.length * cardW + (options.length - 1) * 30;
+        // Render 3 Poppy Cute Upgrade Cards
+        const cardW = 220;
+        const cardH = 310;
+        const totalW = options.length * cardW + (options.length - 1) * 25;
         const startX = (canvasWidth - totalW) / 2;
         const startY = (canvasHeight - cardH) / 2;
 
         options.forEach((opt, i) => {
             if (!opt) return;
 
-            const cx = startX + i * (cardW + 30);
+            const cx = startX + i * (cardW + 25);
             const cy = startY;
             const isHovered = (this.hoveredIndex === i);
 
             ctx.save();
             if (isHovered) {
-                ctx.translate(0, -8);
+                ctx.translate(0, -10);
             }
 
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
 
-            // Draw 2D Card Asset Background
+            // Draw Card Background
             if (cardBgImage.complete && cardBgImage.naturalWidth !== 0) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.roundRect(cx, cy, cardW, cardH, 16);
+                ctx.clip();
                 ctx.drawImage(cardBgImage, cx, cy, cardW, cardH);
+                ctx.restore();
             } else {
-                ctx.fillStyle = 'rgba(30, 41, 59, 0.95)';
-                ctx.fillRect(cx, cy, cardW, cardH);
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.roundRect(cx, cy, cardW, cardH, 16);
+                ctx.fill();
             }
 
-            // Card Border Highlight
+            // Glowing Card Border
             ctx.strokeStyle = isHovered ? '#00ffff' : '#f1c40f';
-            ctx.lineWidth = isHovered ? 3.5 : 2;
-            ctx.strokeRect(cx, cy, cardW, cardH);
+            ctx.lineWidth = isHovered ? 4 : 2;
+            ctx.beginPath();
+            ctx.roundRect(cx, cy, cardW, cardH, 16);
+            ctx.stroke();
 
-            // Card Icon
-            ctx.font = '48px Arial';
+            // Poppy Icon Circle Badge
+            const iconY = cy + 65;
+            ctx.beginPath();
+            ctx.arc(cx + cardW / 2, iconY, 36, 0, Math.PI * 2);
+            ctx.fillStyle = isHovered ? 'rgba(0, 255, 255, 0.25)' : 'rgba(241, 196, 15, 0.2)';
+            ctx.fill();
+            ctx.strokeStyle = isHovered ? '#00ffff' : '#f1c40f';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Icon
+            ctx.font = '38px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(opt.icon || '⚡', cx + cardW / 2, cy + 75);
+            ctx.fillText(opt.icon || '⚡', cx + cardW / 2, iconY + 13);
 
             // Card Name
             ctx.fillStyle = isHovered ? '#00ffff' : '#ffffff';
-            ctx.font = 'bold 16px Arial';
-            ctx.fillText(opt.name || opt.title || 'Upgrade', cx + cardW / 2, cy + 130);
+            ctx.font = 'bold 17px Arial';
+            ctx.fillText(opt.name || opt.title || 'Upgrade', cx + cardW / 2, cy + 135);
 
             // Action Badge (NEW / UPGRADE / STAT)
             const badgeType = opt.type || 'UPGRADE';
             ctx.fillStyle = badgeType === 'NEW' ? '#2ecc71' : badgeType === 'STAT' ? '#9b59b6' : '#e67e22';
-            ctx.fillRect(cx + 30, cy + 145, cardW - 60, 24);
+            ctx.beginPath();
+            ctx.roundRect(cx + 35, cy + 150, cardW - 70, 24, 12);
+            ctx.fill();
 
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 12px Arial';
-            ctx.fillText(badgeType === 'NEW' ? '✦ NEW WEAPON ✦' : badgeType === 'STAT' ? '✦ STAT BOOST ✦' : `★ LEVEL ${opt.level || 2} ★`, cx + cardW / 2, cy + 161);
+            ctx.fillText(badgeType === 'NEW' ? '✦ NEW ✦' : badgeType === 'STAT' ? '✦ STAT ✦' : `★ LVL ${opt.level || 2} ★`, cx + cardW / 2, cy + 166);
 
-            // Description Text Wrapping (Fail-safe for null/undefined)
-            ctx.fillStyle = '#cbd5e1';
-            ctx.font = '13px Arial';
-            this.drawWrappedText(ctx, opt.description || opt.desc || '', cx + 15, cy + 195, cardW - 30, 18);
+            // Short Clean Benefit Description
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = 'bold 13px Arial';
+            const shortDesc = opt.description || opt.desc || 'Boost skill power.';
+            this.drawWrappedText(ctx, shortDesc, cx + 15, cy + 205, cardW - 30, 18);
 
-            // Select Button Prompt
+            // Select Button Badge
             ctx.fillStyle = isHovered ? '#00ffff' : '#f1c40f';
-            ctx.font = 'bold 14px Arial';
-            ctx.fillText(isHovered ? '▶ CLICK TO CHOOSE ◀' : 'SELECT', cx + cardW / 2, cy + cardH - 20);
+            ctx.beginPath();
+            ctx.roundRect(cx + 25, cy + cardH - 45, cardW - 50, 30, 15);
+            ctx.fill();
+
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 13px Arial';
+            ctx.fillText(isHovered ? '▶ SELECT ◀' : 'CHOOSE', cx + cardW / 2, cy + cardH - 25);
 
             ctx.restore();
         });
