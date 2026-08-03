@@ -64,16 +64,22 @@ export class GameScene {
             this.enemies.push(new Enemy(enemy.x + 10, enemy.y + 10, 'miniSlime'));
         }
 
-        // Drop Emerald Gem (DO NOT add score/XP until picked up by player!)
-        let gemType = 'emerald';
-        if (enemy.type === 'bear') gemType = 'boss_emerald';
-        else if (enemy.type === 'ghost') gemType = 'large_emerald';
-        
-        this.gems.push(new Gem(enemy.x, enemy.y, gemType));
+        // EXACT GEM DROP RULES: Standard Enemy = 1 Gem; Boss Enemy = 5 Gems!
+        if (enemy.type === 'bear') {
+            // Boss drops 5 Emerald Gems!
+            for (let i = 0; i < 5; i++) {
+                const offsetX = (Math.random() - 0.5) * 40;
+                const offsetY = (Math.random() - 0.5) * 40;
+                this.gems.push(new Gem(enemy.x + offsetX, enemy.y + offsetY, 'emerald'));
+            }
+        } else {
+            // Standard enemy drops 1 Emerald Gem!
+            this.gems.push(new Gem(enemy.x, enemy.y, 'emerald'));
+        }
 
         // 30% bonus coin drop
         if (Math.random() < 0.3) {
-            this.coins.push(new Coin(enemy.x + 10, enemy.y + 10));
+            this.coins.push(new Coin(enemy.x + 15, enemy.y + 15));
         }
     }
 
@@ -199,7 +205,7 @@ export class GameScene {
             enemy.render(ctx, sx, sy);
         });
 
-        // Draw Player
+        // Draw Player (Wang Lin Xianxia MC Hero)
         if (this.player && !this.player.dead) {
             const px = this.camera.getScreenX(this.player.x, w);
             const py = this.camera.getScreenY(this.player.y, h);
