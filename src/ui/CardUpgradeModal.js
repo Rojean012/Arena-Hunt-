@@ -10,9 +10,9 @@ export class CardUpgradeModal {
     }
 
     update(levelManager, weaponManager, player) {
-        if (!levelManager.isLevelingUp) return;
+        if (!levelManager || !levelManager.isLevelingUp) return;
 
-        const options = levelManager.currentOptions;
+        const options = levelManager.currentOptions || levelManager.cardOptions;
         if (!options || options.length === 0) return;
 
         // Check Card Selection Click
@@ -35,7 +35,11 @@ export class CardUpgradeModal {
                 this.hoveredIndex = i;
                 if (input.mouse.down) {
                     input.mouse.down = false;
-                    levelManager.selectUpgrade(i, weaponManager, player);
+                    if (levelManager.selectUpgrade) {
+                        levelManager.selectUpgrade(i, weaponManager, player);
+                    } else if (levelManager.selectCard) {
+                        levelManager.selectCard(options[i], weaponManager, player);
+                    }
                     break;
                 }
             }
@@ -43,9 +47,9 @@ export class CardUpgradeModal {
     }
 
     render(ctx, levelManager, canvasWidth, canvasHeight) {
-        if (!levelManager.isLevelingUp) return;
+        if (!levelManager || !levelManager.isLevelingUp) return;
 
-        const options = levelManager.currentOptions;
+        const options = levelManager.currentOptions || levelManager.cardOptions;
         if (!options || options.length === 0) return;
 
         ctx.save();
@@ -72,6 +76,8 @@ export class CardUpgradeModal {
         const startY = (canvasHeight - cardH) / 2;
 
         options.forEach((opt, i) => {
+            if (!opt) return;
+
             const cx = startX + i * (cardW + 30);
             const cy = startY;
             const isHovered = (this.hoveredIndex === i);
@@ -100,25 +106,26 @@ export class CardUpgradeModal {
             // Card Icon
             ctx.font = '48px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(opt.icon, cx + cardW / 2, cy + 75);
+            ctx.fillText(opt.icon || '⚡', cx + cardW / 2, cy + 75);
 
             // Card Name
             ctx.fillStyle = isHovered ? '#00ffff' : '#ffffff';
-            ctx.font = 'bold 18px Arial';
-            ctx.fillText(opt.name, cx + cardW / 2, cy + 130);
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(opt.name || opt.title || 'Upgrade', cx + cardW / 2, cy + 130);
 
-            // Action Badge (NEW / UPGRADE)
-            ctx.fillStyle = opt.type === 'NEW' ? '#2ecc71' : '#e67e22';
+            // Action Badge (NEW / UPGRADE / STAT)
+            const badgeType = opt.type || 'UPGRADE';
+            ctx.fillStyle = badgeType === 'NEW' ? '#2ecc71' : badgeType === 'STAT' ? '#9b59b6' : '#e67e22';
             ctx.fillRect(cx + 30, cy + 145, cardW - 60, 24);
 
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 12px Arial';
-            ctx.fillText(opt.type === 'NEW' ? '✦ NEW WEAPON ✦' : `★ LEVEL ${opt.level} ★`, cx + cardW / 2, cy + 161);
+            ctx.fillText(badgeType === 'NEW' ? '✦ NEW WEAPON ✦' : badgeType === 'STAT' ? '✦ STAT BOOST ✦' : `★ LEVEL ${opt.level || 2} ★`, cx + cardW / 2, cy + 161);
 
-            // Description Text Wrapping
+            // Description Text Wrapping (Fail-safe for null/undefined)
             ctx.fillStyle = '#cbd5e1';
             ctx.font = '13px Arial';
-            this.drawWrappedText(ctx, opt.description, cx + 15, cy + 195, cardW - 30, 18);
+            this.drawWrappedText(ctx, opt.description || opt.desc || '', cx + 15, cy + 195, cardW - 30, 18);
 
             // Select Button Prompt
             ctx.fillStyle = isHovered ? '#00ffff' : '#f1c40f';
@@ -132,7 +139,8 @@ export class CardUpgradeModal {
     }
 
     drawWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
-        const words = text.split(' ');
+        if (!text) return;
+        const words = String(text).split(' ');
         let line = '';
         let currentY = y;
 

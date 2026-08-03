@@ -10,6 +10,10 @@ export class LevelManager {
         this.cardOptions = [];
     }
 
+    get currentOptions() {
+        return this.cardOptions;
+    }
+
     reset() {
         this.totalGems = 0;
         this.currentTierIndex = 0;
@@ -25,7 +29,9 @@ export class LevelManager {
             this.currentTierIndex++;
             this.targetGems = GameConfig.upgradeThresholds[this.currentTierIndex] || (this.targetGems + 40);
             
-            soundManager.playCoinCollect();
+            if (soundManager && soundManager.playCoinCollect) {
+                soundManager.playCoinCollect();
+            }
             this.generateCardOptions(weaponManager);
             this.isLevelingUp = true;
             return true;
@@ -44,23 +50,23 @@ export class LevelManager {
             if (currentLvl === 0) {
                 // New weapon unlock
                 pool.push({
-                    type: 'weapon_unlock',
+                    type: 'NEW',
                     id: id,
                     icon: wConfig.icon,
-                    title: `UNLOCK: ${wConfig.name}`,
-                    subtitle: 'NEW WEAPON',
-                    desc: wConfig.description,
+                    name: `UNLOCK: ${wConfig.name}`,
+                    description: wConfig.description || 'New magic weapon skill.',
+                    level: 1,
                     rarity: 'RARE'
                 });
             } else if (currentLvl < 5) {
                 // Upgrade weapon
                 pool.push({
-                    type: 'weapon_upgrade',
+                    type: 'UPGRADE',
                     id: id,
                     icon: wConfig.icon,
-                    title: `${wConfig.name} (Lvl ${currentLvl + 1})`,
-                    subtitle: `UPGRADE WEAPON`,
-                    desc: `Increase damage, projectile count & attack speed.`,
+                    name: `${wConfig.name}`,
+                    description: `Increase attack damage, speed & count.`,
+                    level: currentLvl + 1,
                     rarity: 'COMMON'
                 });
             }
@@ -68,32 +74,32 @@ export class LevelManager {
 
         // 2. Stat Options
         pool.push({
-            type: 'stat',
+            type: 'STAT',
             id: 'stat_speed',
             icon: '👟',
-            title: 'BOOTS OF SPEED',
-            subtitle: 'HERO STAT',
-            desc: '+15% Hero Movement Speed',
+            name: 'BOOTS OF SPEED',
+            description: '+15% Hero Movement Speed in combat.',
+            level: 1,
             rarity: 'COMMON'
         });
 
         pool.push({
-            type: 'stat',
+            type: 'STAT',
             id: 'stat_magnet',
             icon: '🧲',
-            title: 'GEM MAGNET',
-            subtitle: 'HERO STAT',
-            desc: '+40% Gem Magnet Pickup Range',
+            name: 'GEM MAGNET',
+            description: '+40% Gem Magnet Pickup Range.',
+            level: 1,
             rarity: 'COMMON'
         });
 
         pool.push({
-            type: 'stat',
+            type: 'STAT',
             id: 'stat_health',
             icon: '💖',
-            title: 'VITALITY ELIXIR',
-            subtitle: 'HERO STAT',
-            desc: 'Instantly heal 50 HP and increase Max HP',
+            name: 'VITALITY ELIXIR',
+            description: 'Instantly heal 50 HP and increase Max HP.',
+            level: 1,
             rarity: 'RARE'
         });
 
@@ -102,10 +108,24 @@ export class LevelManager {
         this.cardOptions = shuffled.slice(0, 3);
     }
 
+    selectUpgrade(index, weaponManager, player) {
+        const card = this.cardOptions[index];
+        if (card) {
+            this.selectCard(card, weaponManager, player);
+        } else {
+            this.isLevelingUp = false;
+        }
+    }
+
     selectCard(card, weaponManager, player) {
-        if (card.type === 'weapon_unlock' || card.type === 'weapon_upgrade') {
+        if (!card) {
+            this.isLevelingUp = false;
+            return;
+        }
+
+        if (card.type === 'NEW' || card.type === 'UPGRADE') {
             weaponManager.addWeapon(card.id);
-        } else if (card.type === 'stat') {
+        } else if (card.type === 'STAT') {
             if (card.id === 'stat_speed') {
                 player.speed += 0.5;
             } else if (card.id === 'stat_magnet') {
@@ -117,6 +137,8 @@ export class LevelManager {
         }
 
         this.isLevelingUp = false;
-        soundManager.playButtonClick();
+        if (soundManager && soundManager.playButtonClick) {
+            soundManager.playButtonClick();
+        }
     }
 }
