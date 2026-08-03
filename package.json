@@ -1,0 +1,14 @@
+{
+  "name": "arena-hunt",
+  "version": "1.0.0",
+  "description": "Professional Arena Survival Top-Down Shooter prepared for Poki, CrazyGames, Y8, and GameDistribution.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

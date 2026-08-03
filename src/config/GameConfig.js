@@ -1,0 +1,115 @@
+/**
+ * GameConfig - Renegade Immortal Xianxia Roguelike
+ */
+export const GameConfig = {
+    canvas: {
+        width: 1920,
+        height: 1080
+    },
+    world: {
+        tileSize: 60
+    },
+    player: {
+        radius: 22,
+        speed: 3.4,
+        maxHealth: 100,
+        magnetRadius: 80 // Close manual pickup range
+    },
+    gems: {
+        emerald: { value: 1, color: '#2ecc71', radius: 8 },
+        large_emerald: { value: 3, color: '#27ae60', radius: 10 },
+        boss_emerald: { value: 5, color: '#1abc9c', radius: 12 }
+    },
+    upgradeThresholds: [5, 12, 22, 35, 50, 70, 95, 125, 160, 200, 250, 310, 380, 460, 550],
+    enemies: {
+        slime: {
+            radius: 18,
+            speed: 1.0,
+            health: 15,
+            damage: 8,
+            color: '#2ecc71',
+            name: 'Slime',
+            gemType: 'emerald'
+        },
+        goblin: {
+            radius: 20,
+            speed: 1.3,
+            health: 25,
+            damage: 12,
+            color: '#e67e22',
+            name: 'Goblin Archer',
+            gemType: 'emerald'
+        },
+        ghost: {
+            radius: 20,
+            speed: 1.5,
+            health: 30,
+            damage: 15,
+            color: '#9b59b6',
+            name: 'Ghost Demon',
+            gemType: 'large_emerald'
+        },
+        bear: {
+            radius: 26,
+            speed: 0.9,
+            health: 90,
+            damage: 25,
+            color: '#e74c3c',
+            name: 'Mutant Boss',
+            gemType: 'boss_emerald'
+        }
+    },
+    weapons: {
+        swords: {
+            id: 'swords',
+            name: 'Orbiting Jiuyou Swords',
+            icon: '⚔️',
+            description: 'Spins sharp Jiuyou energy blades around Wang Lin, slicing through nearby monsters.',
+            baseDamage: 18,
+            cooldown: 0,
+            count: 2,
+            radius: 80,
+            spinSpeed: 0.04
+        },
+        fireball: {
+            id: 'fireball',
+            name: 'Arcane Fireball',
+            icon: '🔥',
+            description: 'Launches exploding magic fireballs at the nearest monsters.',
+            baseDamage: 40,
+            cooldown: 55,
+            count: 1,
+            speed: 8,
+            splashRadius: 50
+        },
+        lightning: {
+            id: 'lightning',
+            name: 'Thunder Bolt',
+            icon: '⚡',
+            description: 'Strikes random monsters in range with instant lightning bolts.',
+            baseDamage: 55,
+            cooldown: 75,
+            count: 1,
+            range: 380
+        },
+        flameAura: {
+            id: 'flameAura',
+            name: 'Flame Ring',
+            icon: '♨️',
+            description: 'Emits a burning halo around your hero that damages surrounding monsters.',
+            baseDamage: 10,
+            cooldown: 15,
+            radius: 110
+        },
+        boomerang: {
+            id: 'boomerang',
+            name: 'Flying Boomerang',
+            icon: '🪃',
+            description: 'Throws curved energy blades that slice through monsters and return to you.',
+            baseDamage: 28,
+            cooldown: 60,
+            count: 1,
+            speed: 8
+        }
+    }
+};
