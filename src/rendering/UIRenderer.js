@@ -1,5 +1,57 @@
 import { GameConfig } from '../config/GameConfig.js';
 
+// Preload 2D Weapon Textures for Top Right HUD Inventory
+const hudWeaponTextures = {};
+
+function loadHudTexture(id, src) {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, 64, 64);
+
+            const imgData = ctx.getImageData(0, 0, 64, 64);
+            const data = imgData.data;
+
+            const bgR = data[0];
+            const bgG = data[1];
+            const bgB = data[2];
+
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+
+                const dr = Math.abs(r - bgR);
+                const dg = Math.abs(g - bgG);
+                const db = Math.abs(b - bgB);
+                const diff = Math.max(dr, Math.max(dg, db));
+
+                if ((r > 235 && g > 235 && b > 235) || (r < 25 && g < 25 && b < 25) || diff < 20) {
+                    data[i + 3] = 0;
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+            hudWeaponTextures[id] = canvas;
+        } catch (e) {
+            hudWeaponTextures[id] = img;
+        }
+    };
+}
+
+loadHudTexture('swords', '/assets/images/sword_icon.jpg');
+loadHudTexture('fireball', '/assets/images/fireball_icon.jpg');
+loadHudTexture('lightning', '/assets/images/thunder_icon.jpg');
+loadHudTexture('flameAura', '/assets/images/flame_ring_icon.jpg');
+loadHudTexture('boomerang', '/assets/images/boomerang_icon.jpg');
+
 export class UIRenderer {
     render(ctx, player, score, waveTier, waveTimer, noticeTimer, noticeTitle, canvasWidth, canvasHeight, levelManager, weaponManager, spawner) {
         this.renderHUD(
@@ -47,13 +99,12 @@ export class UIRenderer {
         ctx.textAlign = 'center';
         ctx.fillText(`HP: ${Math.ceil(player.health)} / ${player.maxHealth}`, hpX + hpW / 2, hpY + 16);
 
-        // 2. Score, Emerald Gems Counter Below Score, and Coins
+        // 2. Score, Emerald Gems Counter, and Coins
         ctx.textAlign = 'left';
         ctx.font = '900 22px "Outfit", sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.fillText(`Score: ${score || 0}`, 20, 68);
 
-        // Emerald Gem Counter directly below Score
         const targetGems = levelManager ? (levelManager.targetGems || 10) : 10;
         const currentGems = levelManager ? (levelManager.totalGems || 0) : 0;
 
@@ -65,7 +116,7 @@ export class UIRenderer {
         ctx.fillStyle = '#f1c40f';
         ctx.fillText(`Coins: $${coins || 0}`, 20, 118);
 
-        // 3. Active Weapon Icons Bar (Top Right)
+        // 3. Active Weapon 2D Textures Bar (Top Right)
         ctx.textAlign = 'right';
         ctx.font = '700 16px "Outfit", sans-serif';
         ctx.fillStyle = '#ef4444';
@@ -80,21 +131,28 @@ export class UIRenderer {
             Object.keys(weaponManager.weapons).forEach(id => {
                 const w = weaponManager.weapons[id];
                 if (!w || !w.config) return;
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
-                ctx.fillRect(slotX, 68, 32, 32);
+
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.fillRect(slotX, 68, 36, 36);
+
                 ctx.strokeStyle = '#f1c40f';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(slotX, 68, 32, 32);
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(slotX, 68, 36, 36);
 
-                ctx.font = '18px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(w.config.icon || '⚔️', slotX + 16, 90);
+                const tex = hudWeaponTextures[id];
+                if (tex && (tex.complete || tex.width)) {
+                    ctx.drawImage(tex, slotX + 3, 71, 30, 30);
+                } else {
+                    ctx.font = '18px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(w.config.icon || '⚔️', slotX + 18, 92);
+                }
 
-                slotX += 38;
+                slotX += 42;
             });
         }
 
-        // 4. Milestone Wave Warning Banner (Bulletproof Finite Gradients!)
+        // 4. Milestone Wave Warning Banner
         const noticeTimer = spawner ? (spawner.milestoneNoticeTimer || spawner.waveNoticeTimer || 0) : 0;
         const noticeTitle = spawner ? (spawner.milestoneTitle || spawner.waveNoticeText || '') : '';
 

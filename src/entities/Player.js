@@ -3,13 +3,16 @@ import { GameConfig } from '../config/GameConfig.js';
 import { soundManager } from '../audio/SoundManager.js';
 
 let heroCanvas = null;
+let redHeroCanvas = null;
 
 function loadHeroSprite(src) {
     const heroImg = new Image();
     heroImg.src = src;
     heroImg.onload = () => {
         try {
-            const targetSize = 256;
+            const targetSize = 128; // Crisp un-blurred 128x128 resolution
+
+            // 1. Normal Cut-Out Hero Canvas
             const canvas = document.createElement('canvas');
             canvas.width = targetSize;
             canvas.height = targetSize;
@@ -35,13 +38,26 @@ function loadHeroSprite(src) {
                 const db = Math.abs(b - bgB);
                 const diff = Math.max(dr, Math.max(dg, db));
 
-                if ((r > 235 && g > 235 && b > 235) || (r < 25 && g < 25 && b < 25) || diff < 22) {
-                    data[i + 3] = 0;
+                if ((r > 235 && g > 235 && b > 235) || (r < 25 && g < 25 && b < 25) || diff < 26) {
+                    data[i + 3] = 0; // Cut out background cleanly
                 }
             }
 
             ctx.putImageData(imgData, 0, 0);
             heroCanvas = canvas;
+
+            // 2. Pure Character Red Damage Tint Canvas (ZERO Square Box!)
+            const redCanvas = document.createElement('canvas');
+            redCanvas.width = targetSize;
+            redCanvas.height = targetSize;
+            const redCtx = redCanvas.getContext('2d');
+
+            redCtx.drawImage(canvas, 0, 0);
+            redCtx.globalCompositeOperation = 'source-in';
+            redCtx.fillStyle = 'rgba(239, 68, 68, 0.90)';
+            redCtx.fillRect(0, 0, targetSize, targetSize);
+
+            redHeroCanvas = redCanvas;
         } catch (e) {
             heroCanvas = heroImg;
         }
@@ -129,7 +145,7 @@ export class Player extends Entity {
 
     addXP(amount) {
         this.xp += amount;
-        this.gemsCollected += 1; // Increment total emerald gems collected count!
+        this.gemsCollected += 1;
 
         if (this.xp >= this.xpToNextLevel) {
             this.levelUp();
@@ -175,12 +191,9 @@ export class Player extends Entity {
         if (heroCanvas && (heroCanvas.complete || heroCanvas.width)) {
             ctx.drawImage(heroCanvas, -r * 1.5, -r * 1.5, r * 3.0, r * 3.0);
 
-            if (this.hitFlash > 0) {
-                ctx.save();
-                ctx.globalCompositeOperation = 'source-atop';
-                ctx.fillStyle = 'rgba(239, 68, 68, 0.75)';
-                ctx.fillRect(-r * 1.5, -r * 1.5, r * 3.0, r * 3.0);
-                ctx.restore();
+            // Pure Character Red Hit Flash Tint (ZERO Square Box!)
+            if (this.hitFlash > 0 && redHeroCanvas) {
+                ctx.drawImage(redHeroCanvas, -r * 1.5, -r * 1.5, r * 3.0, r * 3.0);
             }
         } else {
             // High-visibility cyan hero avatar fallback

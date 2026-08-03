@@ -85,7 +85,6 @@ export class Enemy extends Entity {
         this.flankAngle = Math.random() * Math.PI * 2;
         this.hitFlash = 0;
         
-        // Smooth orientation tracking
         this.angle = 0;
         this.facingRight = true;
     }
@@ -100,7 +99,6 @@ export class Enemy extends Entity {
         const dy = playerY - this.y;
         const dist = Math.hypot(dx, dy);
 
-        // Smooth angle tracking (Prevents snake spinning in circles!)
         if (dist > 25) {
             const targetAngle = Math.atan2(dy, dx);
             let diff = targetAngle - this.angle;
@@ -376,7 +374,7 @@ export class Enemy extends Entity {
 
         if (this.health <= 0) {
             this.health = 0;
-            this.dead = true; // Mark dead immediately so it only triggers ONCE!
+            this.dead = true;
             if (soundManager && soundManager.playEnemyDefeat) {
                 soundManager.playEnemyDefeat();
             }
@@ -397,11 +395,14 @@ export class Enemy extends Entity {
         ctx.save();
         ctx.translate(screenX, screenY + bobY);
 
+        // Standardized Facing Directions across all 10 enemy models!
         if (this.type === 'snake') {
             ctx.rotate(this.angle + Math.PI / 2);
-        } else if (['goblin', 'bear', 'ghost', 'fox_demon', 'cultist_sorcerer', 'stone_golem', 'spider_fiend', 'frost_dragon'].includes(this.type)) {
+        } else {
             if (this.facingRight) {
                 ctx.scale(-1, 1);
+            } else {
+                ctx.scale(1, 1);
             }
         }
 

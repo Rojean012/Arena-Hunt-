@@ -217,10 +217,10 @@ export class WeaponManager {
             }
         }
 
-        // 4. Rotating Flame Ring
+        // 4. Rotating Flame Ring (Counter-Clockwise Spin!)
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
-            this.flameRotationAngle += 0.05;
+            this.flameRotationAngle -= 0.035; // Rotate in opposite direction!
 
             w.cooldownTimer++;
             if (w.cooldownTimer >= w.config.cooldown) {
@@ -347,12 +347,12 @@ export class WeaponManager {
         const px = camera.getScreenX(player.x, canvasWidth);
         const py = camera.getScreenY(player.y, canvasHeight);
 
-        // 1. Rotating Flame Ring
+        // 1. Sleek Thinner Rotating Flame Ring (Counter-Clockwise Spin!)
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
             const auraImg = weaponImages['flameAura'];
             const radius = w.config.radius;
-            const dSize = radius * 2.4;
+            const dSize = radius * 2.1; // Thinner ring size!
 
             ctx.save();
             ctx.translate(px, py);
@@ -362,7 +362,7 @@ export class WeaponManager {
                 ctx.drawImage(auraImg, -dSize / 2, -dSize / 2, dSize, dSize);
             } else {
                 ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
-                ctx.lineWidth = 4;
+                ctx.lineWidth = 3;
                 ctx.beginPath();
                 ctx.arc(0, 0, radius, 0, Math.PI * 2);
                 ctx.stroke();
