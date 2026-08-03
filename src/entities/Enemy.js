@@ -2,6 +2,44 @@ import { Entity } from './Entity.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { soundManager } from '../audio/SoundManager.js';
 
+// Preload Enemy 2D Asset Images with Chroma-Key Background Filters
+const enemySprites = {};
+
+function loadEnemySprite(type, src) {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+
+            // Key out white / light background pixels
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                if (r > 190 && g > 190 && b > 190) {
+                    data[i + 3] = 0;
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+            enemySprites[type] = canvas;
+        } catch (e) {
+            enemySprites[type] = img;
+        }
+    };
+}
+
+loadEnemySprite('slime', '/assets/images/slime_enemy.jpg');
+loadEnemySprite('miniSlime', '/assets/images/slime_enemy.jpg');
+
 export class Enemy extends Entity {
     constructor(x, y, type = 'slime') {
         let spec = GameConfig.enemies[type];
@@ -182,28 +220,13 @@ export class Enemy extends Entity {
             ctx.fill();
         }
 
-        // Render High-Quality 2D Procedural Artwork per Enemy Type
-        if (this.type === 'slime' || this.type === 'miniSlime') {
-            // 1. Cute Gel Slime
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : (this.type === 'miniSlime' ? '#2ecc71' : '#10b981');
-            ctx.fill();
+        // Render Slimes using 2D Sprite Asset, other enemies using Super Refined Cute 2D Artwork!
+        const sprite = enemySprites[this.type];
 
-            // Inner Core
-            ctx.beginPath();
-            ctx.arc(-2, -2, r * 0.5, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.fill();
-
-            // Cute Eyes
-            ctx.fillStyle = '#0f172a';
-            ctx.beginPath();
-            ctx.arc(-r * 0.3, -r * 0.1, r * 0.18, 0, Math.PI * 2);
-            ctx.arc(r * 0.3, -r * 0.1, r * 0.18, 0, Math.PI * 2);
-            ctx.fill();
+        if (sprite && (sprite.complete || sprite.width)) {
+            ctx.drawImage(sprite, -r * 1.3, -r * 1.3, r * 2.6, r * 2.6);
         } else if (this.type === 'goblin') {
-            // 2. Goblin Archer Warrior
+            // Goblin Archer Warrior
             ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : '#15803d';
             ctx.beginPath();
             ctx.arc(0, 0, r, 0, Math.PI * 2);
@@ -223,7 +246,7 @@ export class Enemy extends Entity {
             ctx.lineTo(r * 0.7, 0);
             ctx.fill();
 
-            // Glowing Red Eyes & Leather Hood
+            // Glowing Red Eyes
             ctx.fillStyle = '#ef4444';
             ctx.beginPath();
             ctx.arc(-r * 0.3, -r * 0.2, 3, 0, Math.PI * 2);
@@ -237,7 +260,7 @@ export class Enemy extends Entity {
             ctx.arc(r * 0.6, 0, r * 0.7, -Math.PI * 0.4, Math.PI * 0.4);
             ctx.stroke();
         } else if (this.type === 'ghost') {
-            // 3. Ethereal Phantom Specter
+            // Ethereal Phantom Specter
             ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : 'rgba(168, 85, 247, 0.85)';
             ctx.beginPath();
             ctx.arc(0, -2, r, 0, Math.PI * 2);
@@ -257,13 +280,13 @@ export class Enemy extends Entity {
             ctx.arc(r * 0.35, -r * 0.3, 3.5, 0, Math.PI * 2);
             ctx.fill();
         } else if (this.type === 'bear') {
-            // 4. Orc Berserker Boss
+            // Orc Berserker Boss
             ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : '#991b1b';
             ctx.beginPath();
             ctx.arc(0, 0, r, 0, Math.PI * 2);
             ctx.fill();
 
-            // Spiked Shoulders & Tusks
+            // Spiked Tusks
             ctx.fillStyle = '#fef08a';
             ctx.beginPath();
             ctx.moveTo(-r * 0.5, r * 0.2);
@@ -277,27 +300,27 @@ export class Enemy extends Entity {
             ctx.lineTo(r * 0.2, 0);
             ctx.fill();
 
-            // Glowing Red Berserk Eyes
+            // Glowing Eyes
             ctx.fillStyle = '#facc15';
             ctx.beginPath();
             ctx.arc(-r * 0.3, -r * 0.2, 4, 0, Math.PI * 2);
             ctx.arc(r * 0.3, -r * 0.2, 4, 0, Math.PI * 2);
             ctx.fill();
         } else if (this.type === 'snake') {
-            // 5. Coiled Viper Serpent
+            // Coiled Viper Serpent
             ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : '#7e22ce';
             ctx.beginPath();
             ctx.arc(0, 0, r, 0, Math.PI * 2);
             ctx.fill();
 
-            // Serpent Scales Pattern
+            // Scales Pattern
             ctx.strokeStyle = '#a855f7';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(0, 0, r * 0.6, 0, Math.PI * 1.5);
             ctx.stroke();
 
-            // Glowing Eyes & Split Tongue
+            // Eyes & Tongue
             ctx.fillStyle = '#facc15';
             ctx.beginPath();
             ctx.arc(-r * 0.3, -r * 0.2, 3, 0, Math.PI * 2);
@@ -312,6 +335,12 @@ export class Enemy extends Entity {
             ctx.moveTo(0, r * 0.3);
             ctx.lineTo(3, r * 0.8);
             ctx.stroke();
+        } else {
+            // Fallback rendering
+            ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : this.color;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.fill();
         }
 
         // Hit Flash Tint

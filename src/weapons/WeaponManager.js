@@ -199,8 +199,11 @@ export class WeaponManager {
                     }
                 } else {
                     const angle = Math.atan2(player.y - p.y, player.x - p.x);
-                    p.x += Math.cos(angle) * (w ? w.config.speed * 1.2 : 9);
-                    p.y += Math.sin(angle) * (w ? w.config.speed * 1.2 : 9);
+                    const returnSpeed = (this.weapons['boomerang'] && this.weapons['boomerang'].config) 
+                        ? this.weapons['boomerang'].config.speed * 1.2 
+                        : 9;
+                    p.x += Math.cos(angle) * returnSpeed;
+                    p.y += Math.sin(angle) * returnSpeed;
                     if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + 10) {
                         p.dead = true;
                     }
