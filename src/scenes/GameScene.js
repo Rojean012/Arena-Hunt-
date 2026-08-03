@@ -63,7 +63,7 @@ export class GameScene {
     constructor(sceneManager) {
         this.sceneManager = sceneManager;
         
-        this.player = new Player(0, 0);
+        this.player = new Player(1500, 1500); // Start at world center (1500, 1500)
         this.camera = new Camera();
         this.renderer = new Renderer();
         this.uiRenderer = new UIRenderer();
@@ -82,9 +82,9 @@ export class GameScene {
     }
 
     enter() {
-        this.player.reset(0, 0);
-        this.camera.x = 0;
-        this.camera.y = 0;
+        this.player.reset(1500, 1500); // Reset player to center of 3000x3000 world
+        this.camera.x = 1500;
+        this.camera.y = 1500;
         this.spawner.reset();
         this.weaponManager.reset();
         this.levelManager.reset();
@@ -175,9 +175,9 @@ export class GameScene {
 
     updateEnemyProjectiles() {
         this.enemyProjectiles.forEach(p => {
-            if (p.type === 'bloodPillar') { // Blood Meteor Strike!
+            if (p.type === 'bloodPillar') {
                 p.timer--;
-                if (p.timer === 20) { // Meteor falls from sky!
+                if (p.timer === 20) {
                     this.particles.spawnExplosion(p.x, p.y);
                     if (soundManager && soundManager.playEnemyDefeat) soundManager.playEnemyDefeat();
                 }
@@ -282,7 +282,7 @@ export class GameScene {
             ctx.save();
             ctx.translate(sx, sy);
 
-            if (p.type === 'bloodPillar') { // Blood Meteor Strike Target Rune & Falling Meteor!
+            if (p.type === 'bloodPillar') {
                 ctx.fillStyle = 'rgba(220, 38, 38, 0.25)';
                 ctx.strokeStyle = '#dc2626';
                 ctx.lineWidth = 2.5;
