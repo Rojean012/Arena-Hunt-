@@ -15,6 +15,10 @@ export class PlatformSDK {
         };
     }
 
+    static submitScore(score) {
+        return platformSDK.submitScore(score);
+    }
+
     async init() {
         if (this.isInitialized) return;
 

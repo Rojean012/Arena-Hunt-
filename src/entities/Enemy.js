@@ -87,6 +87,7 @@ export class Enemy extends Entity {
         
         this.angle = 0;
         this.facingRight = true;
+        this.isAttacking = false;
     }
 
     update(playerX, playerY, projectiles) {
@@ -99,16 +100,21 @@ export class Enemy extends Entity {
         const dy = playerY - this.y;
         const dist = Math.hypot(dx, dy);
 
-        // Smooth orientation tracking without jittery back-and-forth flipping!
-        if (dist > 25) {
-            const targetAngle = Math.atan2(dy, dx);
-            let diff = targetAngle - this.angle;
-            while (diff < -Math.PI) diff += Math.PI * 2;
-            while (diff > Math.PI) diff -= Math.PI * 2;
-            this.angle += diff * 0.12;
+        // Close-range Melee Attack Gate: Lock orientation to eliminate flickering!
+        if (dist < this.radius + 35) {
+            this.isAttacking = true;
+        } else {
+            this.isAttacking = false;
+            if (dist > 35) {
+                const targetAngle = Math.atan2(dy, dx);
+                let diff = targetAngle - this.angle;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                this.angle += diff * 0.12;
 
-            if (Math.abs(dx) > 3.0) {
-                this.facingRight = (dx > 0);
+                if (Math.abs(dx) > 3.0) {
+                    this.facingRight = (dx > 0);
+                }
             }
         }
 
@@ -390,9 +396,11 @@ export class Enemy extends Entity {
 
         const r = this.radius;
 
+        // Melee Attack Lunge Pulse Animation when close to player!
+        const attackPulse = this.isAttacking ? Math.sin(this.animTimer * 6) * 5.0 : 0;
         const squishX = 1.0 + Math.sin(this.animTimer * 2) * 0.06;
         const squishY = 1.0 - Math.sin(this.animTimer * 2) * 0.06;
-        const bobY = Math.abs(Math.sin(this.animTimer * 3)) * -3;
+        const bobY = Math.abs(Math.sin(this.animTimer * 3)) * -3 + attackPulse;
 
         ctx.save();
         ctx.translate(screenX, screenY + bobY);
@@ -400,8 +408,7 @@ export class Enemy extends Entity {
         if (this.type === 'snake') {
             ctx.rotate(this.angle + Math.PI / 2);
         } else {
-            // FIX: Goblin raw sprite image faces LEFT by default!
-            // Adjust scaling so Goblin faces the player accurately without turning backwards!
+            // Goblin raw sprite image faces LEFT by default!
             if (this.type === 'goblin') {
                 if (this.facingRight) {
                     ctx.scale(1, 1);
@@ -418,6 +425,13 @@ export class Enemy extends Entity {
         }
 
         ctx.scale(squishX, squishY);
+
+        if (this.isAttacking) {
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+            ctx.beginPath();
+            ctx.arc(0, 0, r + 10, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         if (this.type === 'bear' && this.isCharging) {
             ctx.fillStyle = 'rgba(231, 76, 60, 0.4)';
