@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slime Model Comparison - Arena Hunt</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        h1 {
+            color: #f1c40f;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #94a3b8;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+        .container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .card {
+            background: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 16px;
+            padding: 24px;
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .card:hover {
+            border-color: #00ffff;
+            transform: translateY(-5px);
+        }
+        .card h2 {
+            font-size: 20px;
+            color: #38bdf8;
+            margin-bottom: 8px;
+        }
+        .card .badge {
+            background: #0284c7;
+            color: #ffffff;
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        canvas {
+            background: #0b0f19;
+            border-radius: 12px;
+            border: 1px solid #475569;
+        }
+        .desc {
+            font-size: 14px;
+            color: #cbd5e1;
+            margin-top: 16px;
+            text-align: center;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 SLIME MODEL COMPARISON 🧪</h1>
+    <p>Side-by-side live animation comparison of the 2 Slime rendering styles</p>
+
+    <div class="container">
+        <!-- 1. Original Procedural Canvas Slime -->
+        <div class="card">
+            <h2>1. Original Procedural Slime</h2>
+            <div class="badge" style="background: #10b981;">Code / Canvas Drawing</div>
+            <canvas id="proceduralCanvas" width="220" height="220"></canvas>
+            <div class="desc">
+                Procedural translucent gel blob with shiny highlight ring, glowing core, cute anime eyes, and bouncy squish/stretch animations.
+            </div>
+        </div>
+
+        <!-- 2. 2D Image Asset Slime -->
+        <div class="card">
+            <h2>2. Image Asset Slime</h2>
+            <div class="badge" style="background: #8b5cf6;">slime_enemy.jpg Sprite</div>
+            <canvas id="imageCanvas" width="220" height="220"></canvas>
+            <div class="desc">
+                2D graphic image asset with offscreen chroma-key white background removal and scaling/bobbing animations.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Procedural Slime Render ---
+        const procCanvas = document.getElementById('proceduralCanvas');
+        const procCtx = procCanvas.getContext('2d');
+
+        // --- 2. Image Slime Render ---
+        const imgCanvas = document.getElementById('imageCanvas');
+        const imgCtx = imgCanvas.getContext('2d');
+
+        const slimeImg = new Image();
+        slimeImg.src = '/assets/images/slime_enemy.jpg';
+        let processedSprite = null;
+
+        slimeImg.onload = () => {
+            try {
+                const c = document.createElement('canvas');
+                c.width = slimeImg.width;
+                c.height = slimeImg.height;
+                const cx = c.getContext('2d');
+                cx.drawImage(slimeImg, 0, 0);
+
+                const data = cx.getImageData(0, 0, c.width, c.height).data;
+                const imgData = cx.getImageData(0, 0, c.width, c.height);
+                for (let i = 0; i < data.length; i += 4) {
+                    if (data[i] > 190 && data[i+1] > 190 && data[i+2] > 190) {
+                        imgData.data[i+3] = 0;
+                    }
+                }
+                cx.putImageData(imgData, 0, 0);
+                processedSprite = c;
+            } catch(e) {
+                processedSprite = slimeImg;
+            }
+        };
+
+        let timer = 0;
+
+        function loop() {
+            timer += 0.08;
+
+            // Common Animation Curves
+            const squishX = 1.0 + Math.sin(timer * 2) * 0.1;
+            const squishY = 1.0 - Math.sin(timer * 2) * 0.1;
+            const bobY = Math.abs(Math.sin(timer * 3)) * -6;
+
+            // --- Draw Procedural Slime ---
+            procCtx.clearRect(0, 0, 220, 220);
+            procCtx.save();
+            procCtx.translate(110, 110 + bobY);
+            procCtx.scale(squishX, squishY);
+
+            const r = 42;
+
+            // Gel Body Fill
+            const grad = procCtx.createRadialGradient(-10, -10, 5, 0, 0, r);
+            grad.addColorStop(0, '#34d399');
+            grad.addColorStop(0.7, '#10b981');
+            grad.addColorStop(1, '#047857');
+
+            procCtx.fillStyle = grad;
+            procCtx.beginPath();
+            procCtx.arc(0, 0, r, 0, Math.PI * 2);
+            procCtx.fill();
+
+            // Inner Core Nucleus
+            procCtx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+            procCtx.beginPath();
+            procCtx.arc(-8, -12, 14, 0, Math.PI * 2);
+            procCtx.fill();
+
+            // Shiny Highlight Rim
+            procCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            procCtx.lineWidth = 3;
+            procCtx.beginPath();
+            procCtx.arc(0, 0, r - 3, Math.PI * 1.1, Math.PI * 1.6);
+            procCtx.stroke();
+
+            // Anime Eyes
+            procCtx.fillStyle = '#0f172a';
+            procCtx.beginPath();
+            procCtx.arc(-14, -4, 7, 0, Math.PI * 2);
+            procCtx.arc(14, -4, 7, 0, Math.PI * 2);
+            procCtx.fill();
+
+            // Eye Glint
+            procCtx.fillStyle = '#ffffff';
+            procCtx.beginPath();
+            procCtx.arc(-16, -6, 2.5, 0, Math.PI * 2);
+            procCtx.arc(12, -6, 2.5, 0, Math.PI * 2);
+            procCtx.fill();
+
+            procCtx.restore();
+
+
+            // --- Draw Image Slime ---
+            imgCtx.clearRect(0, 0, 220, 220);
+            imgCtx.save();
+            imgCtx.translate(110, 110 + bobY);
+            imgCtx.scale(squishX, squishY);
+
+            const sprite = processedSprite || slimeImg;
+            if (sprite && (sprite.complete || sprite.width)) {
+                imgCtx.drawImage(sprite, -55, -55, 110, 110);
+            }
+
+            imgCtx.restore();
+
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+</body>
+</html>

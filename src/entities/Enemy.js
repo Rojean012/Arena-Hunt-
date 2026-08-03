@@ -2,7 +2,7 @@ import { Entity } from './Entity.js';
 import { GameConfig } from '../config/GameConfig.js';
 import { soundManager } from '../audio/SoundManager.js';
 
-// Preload Enemy 2D Asset Images with Chroma-Key Background Filters
+// Preload New 2D Enemy Asset Images with Automatic Offscreen Background Removal
 const enemySprites = {};
 
 function loadEnemySprite(type, src) {
@@ -19,13 +19,23 @@ function loadEnemySprite(type, src) {
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imgData.data;
 
-            // Key out white / light background pixels
+            // Sample corner background color
+            const bgR = data[0];
+            const bgG = data[1];
+            const bgB = data[2];
+
+            // Key out background pixels (corner background match OR light/white backgrounds)
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
                 const g = data[i + 1];
                 const b = data[i + 2];
-                if (r > 190 && g > 190 && b > 190) {
-                    data[i + 3] = 0;
+
+                const dr = Math.abs(r - bgR);
+                const dg = Math.abs(g - bgG);
+                const db = Math.abs(b - bgB);
+
+                if ((dr < 40 && dg < 40 && db < 40) || (r > 195 && g > 195 && b > 195)) {
+                    data[i + 3] = 0; // Make transparent
                 }
             }
 
@@ -37,8 +47,13 @@ function loadEnemySprite(type, src) {
     };
 }
 
-loadEnemySprite('slime', '/assets/images/slime_enemy.jpg');
-loadEnemySprite('miniSlime', '/assets/images/slime_enemy.jpg');
+// Load all 5 NEW high-res 2D enemy models from /assets/images/new_models/
+loadEnemySprite('slime', '/assets/images/new_models/slime_enemy.png');
+loadEnemySprite('miniSlime', '/assets/images/new_models/slime_enemy.png');
+loadEnemySprite('goblin', '/assets/images/new_models/goblin_enemy.png');
+loadEnemySprite('ghost', '/assets/images/new_models/ghost_enemy.png');
+loadEnemySprite('snake', '/assets/images/new_models/Viper Serpent.png');
+loadEnemySprite('bear', '/assets/images/new_models/Mutant Orc Berserker.png');
 
 export class Enemy extends Entity {
     constructor(x, y, type = 'slime') {
@@ -220,121 +235,11 @@ export class Enemy extends Entity {
             ctx.fill();
         }
 
-        // Render Slimes using 2D Sprite Asset, other enemies using Super Refined Cute 2D Artwork!
+        // Render 2D Enemy Sprite Image Asset
         const sprite = enemySprites[this.type];
 
         if (sprite && (sprite.complete || sprite.width)) {
-            ctx.drawImage(sprite, -r * 1.3, -r * 1.3, r * 2.6, r * 2.6);
-        } else if (this.type === 'goblin') {
-            // Goblin Archer Warrior
-            ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : '#15803d';
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Pointed Ears
-            ctx.fillStyle = '#166534';
-            ctx.beginPath();
-            ctx.moveTo(-r, -r * 0.3);
-            ctx.lineTo(-r * 1.5, -r * 0.8);
-            ctx.lineTo(-r * 0.7, 0);
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(r, -r * 0.3);
-            ctx.lineTo(r * 1.5, -r * 0.8);
-            ctx.lineTo(r * 0.7, 0);
-            ctx.fill();
-
-            // Glowing Red Eyes
-            ctx.fillStyle = '#ef4444';
-            ctx.beginPath();
-            ctx.arc(-r * 0.3, -r * 0.2, 3, 0, Math.PI * 2);
-            ctx.arc(r * 0.3, -r * 0.2, 3, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Wooden Bow
-            ctx.strokeStyle = '#78350f';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.arc(r * 0.6, 0, r * 0.7, -Math.PI * 0.4, Math.PI * 0.4);
-            ctx.stroke();
-        } else if (this.type === 'ghost') {
-            // Ethereal Phantom Specter
-            ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : 'rgba(168, 85, 247, 0.85)';
-            ctx.beginPath();
-            ctx.arc(0, -2, r, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Spectral Tail Wisps
-            ctx.beginPath();
-            ctx.moveTo(-r, 0);
-            ctx.quadraticCurveTo(-r * 0.5, r * 1.4, 0, r * 0.8);
-            ctx.quadraticCurveTo(r * 0.5, r * 1.4, r, 0);
-            ctx.fill();
-
-            // Glowing Yellow Spectral Eyes
-            ctx.fillStyle = '#facc15';
-            ctx.beginPath();
-            ctx.arc(-r * 0.35, -r * 0.3, 3.5, 0, Math.PI * 2);
-            ctx.arc(r * 0.35, -r * 0.3, 3.5, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (this.type === 'bear') {
-            // Orc Berserker Boss
-            ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : '#991b1b';
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Spiked Tusks
-            ctx.fillStyle = '#fef08a';
-            ctx.beginPath();
-            ctx.moveTo(-r * 0.5, r * 0.2);
-            ctx.lineTo(-r * 0.7, -r * 0.4);
-            ctx.lineTo(-r * 0.2, 0);
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(r * 0.5, r * 0.2);
-            ctx.lineTo(r * 0.7, -r * 0.4);
-            ctx.lineTo(r * 0.2, 0);
-            ctx.fill();
-
-            // Glowing Eyes
-            ctx.fillStyle = '#facc15';
-            ctx.beginPath();
-            ctx.arc(-r * 0.3, -r * 0.2, 4, 0, Math.PI * 2);
-            ctx.arc(r * 0.3, -r * 0.2, 4, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (this.type === 'snake') {
-            // Coiled Viper Serpent
-            ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : '#7e22ce';
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Scales Pattern
-            ctx.strokeStyle = '#a855f7';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 0.6, 0, Math.PI * 1.5);
-            ctx.stroke();
-
-            // Eyes & Tongue
-            ctx.fillStyle = '#facc15';
-            ctx.beginPath();
-            ctx.arc(-r * 0.3, -r * 0.2, 3, 0, Math.PI * 2);
-            ctx.arc(r * 0.3, -r * 0.2, 3, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = '#ef4444';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(0, r * 0.3);
-            ctx.lineTo(-3, r * 0.8);
-            ctx.moveTo(0, r * 0.3);
-            ctx.lineTo(3, r * 0.8);
-            ctx.stroke();
+            ctx.drawImage(sprite, -r * 1.4, -r * 1.4, r * 2.8, r * 2.8);
         } else {
             // Fallback rendering
             ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : this.color;
