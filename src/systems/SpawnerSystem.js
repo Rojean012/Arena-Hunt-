@@ -1,114 +1,142 @@
 import { Enemy } from '../entities/Enemy.js';
-import { soundManager } from '../audio/SoundManager.js';
+import { Gem } from '../entities/Gem.js';
+import { Coin } from '../entities/Coin.js';
+import { GameConfig } from '../config/GameConfig.js';
 
 export class SpawnerSystem {
     constructor() {
-        this.enemySpawnTimer = 0;
-        this.enemySpawnInterval = 55;
+        this.enemies = [];
+        this.gems = [];
+        this.coins = [];
+
+        this.bounds = {
+            width: GameConfig.world.width,
+            height: GameConfig.world.height
+        };
+
+        this.currentWave = 1;
+        this.spawnTimer = 0;
         this.waveTimer = 0;
-        this.difficultyTier = 1; // 1 wave per 18 seconds
-        
-        // Wave Notice Signaling
-        this.waveNoticeText = '';
-        this.waveNoticeTimer = 0;
+        this.waveDuration = 30 * 60; // 30 seconds per wave
+
+        this.milestoneNoticeTimer = 0;
+        this.milestoneTitle = '';
+
+        // Structured 5-Wave Milestone Spawn Progression Tables
+        this.waveSpecs = {
+            1:  { types: ['slime'], maxEnemies: 4, spawnInterval: 180 }, // Slow & steady start (3s spawn interval)
+            2:  { types: ['slime', 'snake'], maxEnemies: 6, spawnInterval: 150 },
+            3:  { types: ['slime', 'snake'], maxEnemies: 8, spawnInterval: 130 },
+            4:  { types: ['goblin', 'ghost'], maxEnemies: 10, spawnInterval: 110 },
+            5:  { types: ['bear'], maxEnemies: 1, spawnInterval: 9999, isBoss: true, title: 'WAVE 5: ORC BERSERKER BOSS' },
+
+            6:  { types: ['goblin', 'ghost'], maxEnemies: 12, spawnInterval: 100 },
+            7:  { types: ['snake', 'fox_demon'], maxEnemies: 14, spawnInterval: 90 },
+            8:  { types: ['fox_demon', 'cultist_sorcerer'], maxEnemies: 15, spawnInterval: 85 },
+            9:  { types: ['cultist_sorcerer', 'goblin'], maxEnemies: 16, spawnInterval: 80 },
+            10: { types: ['stone_golem'], maxEnemies: 1, spawnInterval: 9999, isBoss: true, title: 'WAVE 10: STONE GOLEM BOSS' },
+
+            11: { types: ['fox_demon', 'cultist_sorcerer'], maxEnemies: 17, spawnInterval: 75 },
+            12: { types: ['spider_fiend', 'ghost'], maxEnemies: 18, spawnInterval: 70 },
+            13: { types: ['spider_fiend', 'cultist_sorcerer'], maxEnemies: 19, spawnInterval: 65 },
+            14: { types: ['stone_golem', 'bear'], maxEnemies: 20, spawnInterval: 60 },
+            15: { types: ['frost_dragon'], maxEnemies: 1, spawnInterval: 9999, isBoss: true, title: 'WAVE 15: CELESTIAL FROST DRAGON BOSS' },
+
+            16: { types: ['spider_fiend', 'frost_dragon'], maxEnemies: 21, spawnInterval: 55 },
+            17: { types: ['fox_demon', 'stone_golem'], maxEnemies: 22, spawnInterval: 50 },
+            18: { types: ['cultist_sorcerer', 'frost_dragon'], maxEnemies: 23, spawnInterval: 45 },
+            19: { types: ['spider_fiend', 'stone_golem', 'frost_dragon'], maxEnemies: 24, spawnInterval: 40 },
+            20: { types: ['frost_dragon', 'bear', 'stone_golem'], maxEnemies: 25, spawnInterval: 35, isBoss: true, title: 'WAVE 20: ULTIMATE CELESTIAL SWARM' }
+        };
     }
 
     reset() {
-        this.enemySpawnTimer = 0;
-        this.enemySpawnInterval = 55;
+        this.enemies = [];
+        this.gems = [];
+        this.coins = [];
+        this.currentWave = 1;
+        this.spawnTimer = 0;
         this.waveTimer = 0;
-        this.difficultyTier = 1;
-        this.waveNoticeText = '⚠️ WAVE 1: GEL SLIME SWARM ⚠️';
-        this.waveNoticeTimer = 180; // 3 seconds
+        this.milestoneNoticeTimer = 180;
+        this.milestoneTitle = 'WAVE 1: GEL SWARM';
     }
 
-    update(player, enemies, camera, canvasWidth, canvasHeight) {
+    getWaveSpec(wave) {
+        if (this.waveSpecs[wave]) return this.waveSpecs[wave];
+
+        // Wave 21+ Endless Scaling
+        const types = ['slime', 'goblin', 'ghost', 'snake', 'bear', 'fox_demon', 'cultist_sorcerer', 'stone_golem', 'spider_fiend', 'frost_dragon'];
+        return {
+            types: types,
+            maxEnemies: Math.min(30, 25 + Math.floor((wave - 20) / 2)),
+            spawnInterval: Math.max(25, 35 - Math.floor((wave - 20) / 3))
+        };
+    }
+
+    update(playerX, playerY) {
         this.waveTimer++;
+        if (this.milestoneNoticeTimer > 0) this.milestoneNoticeTimer--;
 
-        // Advance Wave Tier every 18 seconds (1080 frames)
-        if (this.waveTimer % 1080 === 0) {
-            this.difficultyTier++;
-            this.enemySpawnInterval = Math.max(12, 55 - Math.floor(this.difficultyTier * 2));
-            
-            // Structured 5-Wave Milestone Announcements
-            let milestoneNotice = '';
-            if (this.difficultyTier === 6) milestoneNotice = ' — GOBLIN ARCHERS & GHOST DEMONS ARRIVE!';
-            if (this.difficultyTier === 11) milestoneNotice = ' — DEMON FOXES & BLOOD CULTISTS ARRIVE!';
-            if (this.difficultyTier === 16) milestoneNotice = ' — STONE GOLEMS & ORC BERSERKERS ARRIVE!';
-            if (this.difficultyTier === 21) milestoneNotice = ' — CELESTIAL FROST DRAGONS AWAKEN!';
+        const spec = this.getWaveSpec(this.currentWave);
 
-            this.waveNoticeText = `⚠️ WAVE ${this.difficultyTier}${milestoneNotice} ⚠️`;
-            this.waveNoticeTimer = 200;
-            if (soundManager && soundManager.playLevelUp) {
-                soundManager.playLevelUp();
+        // Check Wave Progression Transition
+        if (this.waveTimer >= this.waveDuration && !spec.isBoss) {
+            this.currentWave++;
+            this.waveTimer = 0;
+            const newSpec = this.getWaveSpec(this.currentWave);
+
+            if (newSpec.title || this.currentWave % 5 === 0 || this.currentWave % 5 === 1) {
+                this.milestoneNoticeTimer = 180;
+                this.milestoneTitle = newSpec.title || `MILESTONE: WAVE ${this.currentWave}`;
             }
         }
 
-        if (this.waveNoticeTimer > 0) {
-            this.waveNoticeTimer--;
+        // Spawn Enemies Gradually Up to Max Enemies Limit
+        this.spawnTimer++;
+        if (this.spawnTimer >= spec.spawnInterval) {
+            this.spawnTimer = 0;
+
+            if (this.enemies.length < spec.maxEnemies) {
+                const type = spec.types[Math.floor(Math.random() * spec.types.length)];
+                this.spawnEnemyNearPlayer(playerX, playerY, type);
+            }
         }
 
-        // Spawn Enemies
-        this.enemySpawnTimer++;
-        if (this.enemySpawnTimer >= this.enemySpawnInterval) {
-            this.enemySpawnTimer = 0;
-            this.spawnEnemy(player, enemies, camera, canvasWidth, canvasHeight);
-        }
+        // Filter Dead Entities
+        this.enemies = this.enemies.filter(e => !e.dead);
+        this.gems = this.gems.filter(g => !g.dead);
+        this.coins = this.coins.filter(c => !c.dead);
     }
 
-    spawnEnemy(player, enemies, camera, canvasWidth, canvasHeight) {
-        const margin = 100;
-        let x, y;
+    spawnEnemyNearPlayer(playerX, playerY, type) {
+        const spawnDist = 450 + Math.random() * 200;
+        const angle = Math.random() * Math.PI * 2;
 
-        if (Math.random() < 0.5) {
-            x = Math.random() < 0.5 ? camera.x - canvasWidth / 2 - margin : camera.x + canvasWidth / 2 + margin;
-            y = camera.y - canvasHeight / 2 + Math.random() * canvasHeight;
-        } else {
-            x = camera.x - canvasWidth / 2 + Math.random() * canvasWidth;
-            y = Math.random() < 0.5 ? camera.y - canvasHeight / 2 - margin : camera.y + canvasHeight / 2 + margin;
+        let sx = playerX + Math.cos(angle) * spawnDist;
+        let sy = playerY + Math.sin(angle) * spawnDist;
+
+        // Clamp to World Bounds
+        sx = Math.max(50, Math.min(this.bounds.width - 50, sx));
+        sy = Math.max(50, Math.min(this.bounds.height - 50, sy));
+
+        this.enemies.push(new Enemy(sx, sy, type));
+    }
+
+    spawnRewards(x, y, enemyType) {
+        const isBoss = ['bear', 'stone_golem', 'frost_dragon'].includes(enemyType);
+        const gemCount = isBoss ? 5 : 1;
+        const coinCount = isBoss ? 3 : (Math.random() < 0.3 ? 1 : 0);
+
+        for (let i = 0; i < gemCount; i++) {
+            const gx = x + (Math.random() - 0.5) * 30;
+            const gy = y + (Math.random() - 0.5) * 30;
+            this.gems.push(new Gem(gx, gy, isBoss ? 25 : 10));
         }
 
-        let type = 'slime';
-        const rand = Math.random();
-        const wave = this.difficultyTier;
-
-        // Structured 5-Wave Milestone Progression Table
-        if (wave >= 21) {
-            // Wave 21+: Celestial Cataclysm (All 10 mobs unlocked!)
-            if (rand < 0.10) type = 'frost_dragon';
-            else if (rand < 0.22) type = 'stone_golem';
-            else if (rand < 0.38) type = 'cultist_sorcerer';
-            else if (rand < 0.52) type = 'fox_demon';
-            else if (rand < 0.68) type = 'bear';
-            else if (rand < 0.82) type = 'ghost';
-            else type = rand < 0.9 ? 'goblin' : 'snake';
-        } else if (wave >= 16) {
-            // Wave 16 – 20: Titan Citadel (Golems & Orc Berserkers join)
-            if (rand < 0.18) type = 'stone_golem';
-            else if (rand < 0.40) type = 'bear';
-            else if (rand < 0.60) type = 'cultist_sorcerer';
-            else if (rand < 0.78) type = 'fox_demon';
-            else type = rand < 0.9 ? 'ghost' : 'goblin';
-        } else if (wave >= 11) {
-            // Wave 11 – 15: Demon Cult (Nine-Tailed Foxes & Cultists join)
-            if (rand < 0.30) type = 'fox_demon';
-            else if (rand < 0.55) type = 'cultist_sorcerer';
-            else if (rand < 0.75) type = 'ghost';
-            else if (rand < 0.90) type = 'goblin';
-            else type = 'snake';
-        } else if (wave >= 6) {
-            // Wave 6 – 10: Goblin & Phantom Horde (Goblins & Ghosts join)
-            if (rand < 0.35) type = 'goblin';
-            else if (rand < 0.65) type = 'ghost';
-            else if (rand < 0.85) type = 'spider_fiend';
-            else type = 'snake';
-        } else {
-            // Wave 1 – 5: Gel Swarm (Slimes, Mini Slimes, Viper Serpents, Spider Fiends)
-            if (rand < 0.40) type = 'slime';
-            else if (rand < 0.75) type = 'snake';
-            else type = 'spider_fiend';
+        for (let i = 0; i < coinCount; i++) {
+            const cx = x + (Math.random() - 0.5) * 30;
+            const cy = y + (Math.random() - 0.5) * 30;
+            this.coins.push(new Coin(cx, cy, 1));
         }
-
-        enemies.push(new Enemy(x, y, type));
     }
 }
