@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Audio Synthesizer Test Suite - Arena Hunt</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background: #090d16; color: #f8fafc; padding: 30px; text-align: center; }
+        .back-link { display: inline-block; margin-bottom: 16px; color: #38bdf8; text-decoration: none; font-weight: 600; }
+        h1 { color: #facc15; margin-bottom: 24px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; max-width: 800px; margin: 0 auto; }
+        button { background: #1e293b; color: #38bdf8; border: 1px solid #334155; padding: 18px; border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s; }
+        button:hover { background: #38bdf8; color: #0f172a; transform: scale(1.05); }
+        #status { margin-top: 24px; font-weight: 600; color: #2ecc71; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← Back to Dashboard</a>
+    <h1>🔊 Web Audio Synthesizer Test Suite</h1>
+
+    <div class="grid">
+        <button onclick="triggerSound('playShoot', 'Energy Shot (Triangle Sweep)')">⚔️ Energy Shot</button>
+        <button onclick="triggerSound('playHit', 'Player Damage Hit')">💥 Player Hit</button>
+        <button onclick="triggerSound('playEnemyHit', 'Monster Hit Pulse')">👾 Enemy Hit</button>
+        <button onclick="triggerSound('playEnemyDefeat', 'Monster Defeat Burst')">💀 Enemy Defeat</button>
+        <button onclick="triggerSound('playCoinClink', 'Emerald/Coin Clink')">💎 Coin / Gem Clink</button>
+        <button onclick="triggerSound('playLevelUp', 'Xianxia Level-Up Arpeggio')">🏆 Level Up Arpeggio</button>
+        <button onclick="triggerSound('playGameOver', 'Game Over Sawtooth Sequence')">☠️ Game Over Sequence</button>
+    </div>
+
+    <div id="status">Status: Ready to trigger sounds</div>
+
+    <script type="module">
+        import { soundManager } from '../src/audio/SoundManager.js';
+
+        window.triggerSound = function(method, name) {
+            soundManager.init();
+            soundManager.resume();
+            if (soundManager[method]) {
+                soundManager[method]();
+                document.getElementById('status').innerText = `Played: ${name}`;
+            }
+        };
+    </script>
+</body>
+</html>

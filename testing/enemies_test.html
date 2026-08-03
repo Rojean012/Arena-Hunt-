@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enemy AI Sandbox Test Suite - Arena Hunt</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background: #0b1329; color: #f8fafc; padding: 20px; text-align: center; }
+        .back-link { display: inline-block; margin-bottom: 12px; color: #38bdf8; text-decoration: none; font-weight: 600; }
+        h1 { color: #facc15; margin-bottom: 16px; }
+        .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 16px; }
+        button { background: #1e293b; color: #38bdf8; border: 1px solid #334155; padding: 8px 14px; border-radius: 6px; font-weight: 700; cursor: pointer; }
+        button:hover { background: #38bdf8; color: #0f172a; }
+        canvas { background: #060911; border: 2px solid #334155; border-radius: 12px; max-width: 100%; }
+        #info { margin-top: 12px; font-weight: 600; color: #2ecc71; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← Back to Dashboard</a>
+    <h1>👾 Enemy AI Sandbox Test Suite</h1>
+
+    <div class="controls">
+        <button onclick="spawn('slime')">Spawn Slime</button>
+        <button onclick="spawn('goblin')">Spawn Goblin</button>
+        <button onclick="spawn('snake')">Spawn Viper Serpent</button>
+        <button onclick="spawn('ghost')">Spawn Ghost</button>
+        <button onclick="spawn('bear')">Spawn Berserker</button>
+        <button onclick="spawn('fox_demon')">Spawn Fox Demon</button>
+        <button onclick="spawn('cultist_sorcerer')">Spawn Cultist</button>
+        <button onclick="spawn('stone_golem')">Spawn Golem</button>
+        <button onclick="spawn('spider_fiend')">Spawn Spider</button>
+        <button onclick="spawn('frost_dragon')">Spawn Dragon</button>
+        <button onclick="clearEnemies()" style="background:#ef4444; color:#fff;">Clear All</button>
+    </div>
+
+    <canvas id="sandbox" width="900" height="550"></canvas>
+    <div id="info">Active Enemies: 0</div>
+
+    <script type="module">
+        import { Enemy } from '../src/entities/Enemy.js';
+
+        const canvas = document.getElementById('sandbox');
+        const ctx = canvas.getContext('2d');
+
+        const player = { x: 450, y: 275, radius: 20 };
+        const enemies = [];
+        const projectiles = [];
+
+        window.spawn = function(type) {
+            const angle = Math.random() * Math.PI * 2;
+            const ex = player.x + Math.cos(angle) * 220;
+            const ey = player.y + Math.sin(angle) * 220;
+            enemies.push(new Enemy(ex, ey, type));
+            updateInfo();
+        };
+
+        window.clearEnemies = function() {
+            enemies.length = 0;
+            projectiles.length = 0;
+            updateInfo();
+        };
+
+        function updateInfo() {
+            document.getElementById('info').innerText = `Active Enemies: ${enemies.length} | Projectiles: ${projectiles.length}`;
+        }
+
+        function loop() {
+            ctx.fillStyle = '#060911';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Target Player
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Update & Render Enemies
+            enemies.forEach(e => {
+                e.update(player.x, player.y, projectiles);
+                e.render(ctx, e.x, e.y);
+            });
+
+            // Render Projectiles
+            projectiles.forEach(p => {
+                p.x += p.vx || 0;
+                p.y += p.vy || 0;
+                ctx.fillStyle = p.color || '#ef4444';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius || 6, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+</body>
+</html>

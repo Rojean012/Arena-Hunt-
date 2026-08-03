@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arena Hunt - Developer Test Suite Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #090d16;
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        h1 {
+            font-size: 2.4rem;
+            color: #facc15;
+            text-shadow: 0 0 20px rgba(250, 204, 21, 0.4);
+            margin-bottom: 8px;
+        }
+        p.subtitle {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            max-width: 1100px;
+            width: 100%;
+        }
+        .card {
+            background: #151d2a;
+            border: 1px solid #2a374a;
+            border-radius: 16px;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.25s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+        .card:hover {
+            transform: translateY(-6px);
+            border-color: #facc15;
+            box-shadow: 0 12px 30px rgba(250, 204, 21, 0.15);
+        }
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+        .card h2 {
+            font-size: 1.4rem;
+            color: #38bdf8;
+            margin-bottom: 10px;
+        }
+        .card p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #2563eb;
+            color: #ffffff;
+            font-weight: 700;
+            padding: 10px 18px;
+            border-radius: 8px;
+            text-align: center;
+            align-self: flex-start;
+        }
+        .card:hover .btn {
+            background: #facc15;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 ARENA HUNT TEST SUITE DASHBOARD</h1>
+    <p class="subtitle">Interactive Isolated Testing Environments for Antigravity & Developers</p>
+
+    <div class="grid">
+        <a href="texture_test.html" class="card">
+            <div>
+                <div class="icon">🎨</div>
+                <h2>Texture Inspector</h2>
+                <p>Preview all 2D sprite textures (Wang Lin Hero, Red Hit Tint, 10 Enemy Models, Weapon Icons, Projectiles) with transparency toggles.</p>
+            </div>
+            <div class="btn">Launch Textures Test</div>
+        </a>
+
+        <a href="enemies_test.html" class="card">
+            <div>
+                <div class="icon">👾</div>
+                <h2>Enemy AI Sandbox</h2>
+                <p>Interactive combat arena to spawn & test all 10 enemy types, orientation tracking, HP bars, and special attacks in isolation.</p>
+            </div>
+            <div class="btn">Launch Enemies Test</div>
+        </a>
+
+        <a href="ui_test.html" class="card">
+            <div>
+                <div class="icon">🖥️</div>
+                <h2>UI & Card Upgrade Harness</h2>
+                <p>Preview top HUD, HP bar, Emeralds counter, Coins, Wave kill counter, Milestone banners, and test Card Modal clicks.</p>
+            </div>
+            <div class="btn">Launch UI Test</div>
+        </a>
+
+        <a href="audio_test.html" class="card">
+            <div>
+                <div class="icon">🔊</div>
+                <h2>Web Audio Synthesizer</h2>
+                <p>Interactive Xianxia sound effects studio. Test shoot, hit, enemy defeat, coin clink, level up arpeggio, and game over sounds.</p>
+            </div>
+            <div class="btn">Launch Audio Test</div>
+        </a>
+    </div>
+</body>
+</html>

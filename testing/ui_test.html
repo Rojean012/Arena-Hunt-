@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI & Card Upgrade Test Suite - Arena Hunt</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background: #090d16; color: #f8fafc; padding: 20px; text-align: center; }
+        .back-link { display: inline-block; margin-bottom: 12px; color: #38bdf8; text-decoration: none; font-weight: 600; }
+        h1 { color: #facc15; margin-bottom: 16px; }
+        .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 16px; }
+        button { background: #1e293b; color: #facc15; border: 1px solid #334155; padding: 8px 16px; border-radius: 6px; font-weight: 700; cursor: pointer; }
+        button:hover { background: #facc15; color: #0f172a; }
+        canvas { background: #060911; border: 2px solid #334155; border-radius: 12px; max-width: 100%; }
+        #status { margin-top: 12px; font-weight: 600; color: #38bdf8; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">← Back to Dashboard</a>
+    <h1>🖥️ UI & Card Upgrade Test Suite</h1>
+
+    <div class="controls">
+        <button onclick="triggerLevelUp()">Trigger Card Upgrade Modal</button>
+        <button onclick="addEmeralds()">Add 10 Emerald Gems</button>
+        <button onclick="addCoins()">Add 50 Coins</button>
+        <button onclick="toggleDamage()">Damage Hero (-25 HP)</button>
+    </div>
+
+    <canvas id="uiCanvas" width="1024" height="640"></canvas>
+    <div id="status">Status: Normal HUD</div>
+
+    <script type="module">
+        import { UIRenderer } from '../src/rendering/UIRenderer.js';
+        import { CardUpgradeModal } from '../src/ui/CardUpgradeModal.js';
+        import { LevelManager } from '../src/managers/LevelManager.js';
+        import { WeaponManager } from '../src/weapons/WeaponManager.js';
+        import { input } from '../src/core/Input.js';
+
+        const canvas = document.getElementById('uiCanvas');
+        const ctx = canvas.getContext('2d');
+        input.init(canvas);
+
+        const uiRenderer = new UIRenderer();
+        const upgradeModal = new CardUpgradeModal();
+        const levelManager = new LevelManager();
+        const weaponManager = new WeaponManager();
+
+        const player = { health: 100, maxHealth: 100, coins: 0 };
+        const spawner = { milestoneNoticeTimer: 0, milestoneTitle: '', enemiesKilledInWave: 5, getWaveSpec: () => ({ totalWaveEnemies: 20 }) };
+        let score = 0;
+
+        window.triggerLevelUp = function() {
+            levelManager.triggerLevelUp(player, weaponManager);
+            document.getElementById('status').innerText = 'Status: Level-Up Card Modal Active';
+        };
+
+        window.addEmeralds = function() {
+            score += 100;
+            levelManager.addXP(10, weaponManager);
+            document.getElementById('status').innerText = `Status: Added Emeralds (Total: ${levelManager.totalGems} / ${levelManager.targetGems})`;
+        };
+
+        window.addCoins = function() {
+            player.coins += 50;
+            document.getElementById('status').innerText = `Status: Total Coins $${player.coins}`;
+        };
+
+        window.toggleDamage = function() {
+            player.health = Math.max(0, player.health - 25);
+            document.getElementById('status').innerText = `Status: Hero HP ${player.health} / ${player.maxHealth}`;
+        };
+
+        function loop() {
+            ctx.fillStyle = '#060911';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Update Modal if open
+            if (levelManager.isLevelingUp) {
+                upgradeModal.update(levelManager, weaponManager, player, canvas.width, canvas.height);
+            }
+
+            // Render HUD
+            uiRenderer.render(ctx, player, score, 1, 0, 0, '', canvas.width, canvas.height, levelManager, weaponManager, spawner);
+
+            // Render Modal
+            if (levelManager.isLevelingUp) {
+                upgradeModal.render(ctx, levelManager, canvas.width, canvas.height);
+            }
+
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+</body>
+</html>
