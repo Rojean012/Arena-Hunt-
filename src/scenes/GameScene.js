@@ -257,7 +257,10 @@ export class GameScene {
             this.spawner.milestoneNoticeTimer,
             this.spawner.milestoneTitle,
             Engine.width,
-            Engine.height
+            Engine.height,
+            this.levelManager,
+            this.weaponManager,
+            this.spawner
         );
 
         // 4. Upgrade Modal Screen (if leveling up)
@@ -280,7 +283,6 @@ export class GameScene {
             ctx.translate(sx, sy);
 
             if (p.type === 'bloodPillar') { // Blood Meteor Strike Target Rune & Falling Meteor!
-                // Red Warning Target Zone
                 ctx.fillStyle = 'rgba(220, 38, 38, 0.25)';
                 ctx.strokeStyle = '#dc2626';
                 ctx.lineWidth = 2.5;
@@ -289,13 +291,11 @@ export class GameScene {
                 ctx.fill();
                 ctx.stroke();
 
-                // Target Crosshair Rune
                 ctx.beginPath();
                 ctx.moveTo(-p.radius, 0); ctx.lineTo(p.radius, 0);
                 ctx.moveTo(0, -p.radius); ctx.lineTo(0, p.radius);
                 ctx.stroke();
 
-                // Falling Blood Meteor
                 if (p.timer > 20) {
                     const meteorY = -((p.timer - 20) * 12);
                     ctx.save();
