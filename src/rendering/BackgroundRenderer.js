@@ -2,7 +2,7 @@ import { GameConfig } from '../config/GameConfig.js';
 
 export class BackgroundRenderer {
     constructor() {
-        this.tileSize = 100; // 100px solid stone floor pavers
+        this.tileSize = 120;
     }
 
     render(ctx, camera, canvasWidth, canvasHeight) {
@@ -13,7 +13,7 @@ export class BackgroundRenderer {
         const startTileY = Math.floor((camera.y - canvasHeight / 2) / this.tileSize);
         const endTileY = Math.ceil((camera.y + canvasHeight / 2) / this.tileSize);
 
-        // 1. Solid Earthy Martial Arena Ground Slabs
+        // 1. Earthy Grass & Stone Ground Base
         for (let tx = startTileX; tx <= endTileX; tx++) {
             for (let ty = startTileY; ty <= endTileY; ty++) {
                 const worldX = tx * this.tileSize;
@@ -22,39 +22,81 @@ export class BackgroundRenderer {
                 const screenX = camera.getScreenX(worldX, canvasWidth);
                 const screenY = camera.getScreenY(worldY, canvasHeight);
 
-                // Alternating Ancient Stone Slab Color Palette
-                const isAlt = (Math.abs(tx) + Math.abs(ty)) % 2 === 0;
-                ctx.fillStyle = isAlt ? '#1a2232' : '#141b27';
+                const seed = Math.sin(tx * 12.9898 + ty * 78.233) * 43758.5453;
+                const normSeed = seed - Math.floor(seed);
+
+                // Terrain Color Variance (Lush Grass, Moss, Earthy Soil, Stone Slabs)
+                if (normSeed < 0.35) {
+                    ctx.fillStyle = '#1e2e1e'; // Deep Lush Grass
+                } else if (normSeed < 0.65) {
+                    ctx.fillStyle = '#1b2a1c'; // Mossy Soil
+                } else if (normSeed < 0.85) {
+                    ctx.fillStyle = '#222920'; // Earthy Ground
+                } else {
+                    ctx.fillStyle = '#262f38'; // Ancient Paved Stone Slab
+                }
                 ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
 
-                // Carved Stone Paving Grooves
-                ctx.strokeStyle = '#0f172a';
-                ctx.lineWidth = 2;
+                // Subtle Paving & Dirt Border Lines
+                ctx.strokeStyle = 'rgba(15, 23, 42, 0.4)';
+                ctx.lineWidth = 1;
                 ctx.strokeRect(screenX, screenY, this.tileSize, this.tileSize);
 
-                // Inner Stone Slab Bevel Highlight
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(screenX + 2, screenY + 2, this.tileSize - 4, this.tileSize - 4);
+                // Decorative Grass Blades & Flower Tufts
+                if (normSeed < 0.4) {
+                    ctx.fillStyle = '#22c55e';
+                    ctx.fillRect(screenX + 24, screenY + 30, 2, 8);
+                    ctx.fillRect(screenX + 28, screenY + 26, 2, 12);
+                    ctx.fillRect(screenX + 32, screenY + 32, 2, 6);
+                }
 
-                // Occasional Ancient Xianxia Rune Inlays on Stone Floor
-                if ((tx * 13 + ty * 19) % 9 === 0) {
+                // Decorative Mossy Boulders & Small Rocks
+                if (normSeed > 0.75 && normSeed < 0.88) {
                     ctx.save();
-                    ctx.translate(screenX + this.tileSize / 2, screenY + this.tileSize / 2);
-                    ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
-                    ctx.lineWidth = 1.5;
+                    ctx.fillStyle = '#475569';
                     ctx.beginPath();
-                    ctx.arc(0, 0, 16, 0, Math.PI * 2);
-                    ctx.stroke();
+                    ctx.arc(screenX + 60, screenY + 60, 10, 0, Math.PI * 2);
+                    ctx.fill();
 
-                    ctx.fillStyle = 'rgba(234, 179, 8, 0.18)';
-                    ctx.fillRect(-4, -4, 8, 8);
+                    ctx.fillStyle = '#16a34a';
+                    ctx.beginPath();
+                    ctx.arc(screenX + 57, screenY + 57, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                // Decorative Trees & Canopy Foliage
+                if ((tx * 17 + ty * 31) % 13 === 0) {
+                    ctx.save();
+                    const treeX = screenX + 40;
+                    const treeY = screenY + 40;
+
+                    // Ground Shadow
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                    ctx.beginPath();
+                    ctx.ellipse(treeX, treeY + 18, 22, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Trunk
+                    ctx.fillStyle = '#78350f';
+                    ctx.fillRect(treeX - 5, treeY, 10, 18);
+
+                    // Tree Leaf Canopy Layers
+                    ctx.fillStyle = '#15803d';
+                    ctx.beginPath();
+                    ctx.arc(treeX, treeY - 10, 24, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#166534';
+                    ctx.beginPath();
+                    ctx.arc(treeX - 6, treeY - 14, 16, 0, Math.PI * 2);
+                    ctx.fill();
                     ctx.restore();
                 }
             }
         }
 
-        // 2. Central Martial Arena Qi Ring (World Center 0, 0)
+        // 2. Central Qi Emblem Ring (World Origin 0,0)
         const centerScreenX = camera.getScreenX(0, canvasWidth);
         const centerScreenY = camera.getScreenY(0, canvasHeight);
 
