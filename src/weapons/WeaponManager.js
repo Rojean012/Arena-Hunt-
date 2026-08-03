@@ -1,6 +1,55 @@
 import { GameConfig } from '../config/GameConfig.js';
 import { soundManager } from '../audio/SoundManager.js';
 
+// Preload 2D In-Game Weapon Image Assets with Offscreen Background Removal
+const weaponImages = {};
+
+function loadWeaponImage(id, src) {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+
+            const bgR = data[0];
+            const bgG = data[1];
+            const bgB = data[2];
+
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+
+                const dr = Math.abs(r - bgR);
+                const dg = Math.abs(g - bgG);
+                const db = Math.abs(b - bgB);
+
+                if ((dr < 30 && dg < 30 && db < 30) || (r < 25 && g < 25 && b < 25)) {
+                    data[i + 3] = 0; // Transparent background
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+            weaponImages[id] = canvas;
+        } catch (e) {
+            weaponImages[id] = img;
+        }
+    };
+}
+
+loadWeaponImage('swords', '/assets/images/sword_icon.jpg');
+loadWeaponImage('fireball', '/assets/images/fireball_icon.jpg');
+loadWeaponImage('lightning', '/assets/images/thunder_icon.jpg');
+loadWeaponImage('flameAura', '/assets/images/flame_ring_icon.jpg');
+loadWeaponImage('boomerang', '/assets/images/boomerang_icon.jpg');
+
 export class WeaponManager {
     constructor() {
         this.weapons = {};
@@ -79,14 +128,13 @@ export class WeaponManager {
                 const sx = player.x + Math.cos(angle) * radius;
                 const sy = player.y + Math.sin(angle) * radius;
 
-                // Spawn Xianxia Qi sparkles along sword trail
                 if (Math.random() < 0.3) {
                     particles.spawnSwordSparkle(sx, sy);
                 }
 
                 enemies.forEach(enemy => {
                     if (enemy.dead) return;
-                    if (Math.hypot(enemy.x - sx, enemy.y - sy) < enemy.radius + 20) {
+                    if (Math.hypot(enemy.x - sx, enemy.y - sy) < enemy.radius + 22) {
                         const killed = enemy.takeDamage(w.config.baseDamage * 0.12);
                         particles.spawnBlood(enemy.x, enemy.y, 2);
                         if (killed && onEnemyDefeated) {
@@ -143,7 +191,7 @@ export class WeaponManager {
                         vx: Math.cos(angle) * w.config.speed,
                         vy: Math.sin(angle) * w.config.speed,
                         damage: w.config.baseDamage,
-                        radius: 14,
+                        radius: 16,
                         life: 120,
                         dead: false
                     });
@@ -169,7 +217,7 @@ export class WeaponManager {
                     vx: Math.cos(angle) * w.config.speed,
                     vy: Math.sin(angle) * w.config.speed,
                     damage: w.config.baseDamage,
-                    radius: 16,
+                    radius: 18,
                     spinAngle: 0,
                     returning: false,
                     life: 120,
@@ -286,7 +334,7 @@ export class WeaponManager {
         const px = camera.getScreenX(player.x, canvasWidth);
         const py = camera.getScreenY(player.y, canvasHeight);
 
-        // 1. High-Definition Flame Aura Ring
+        // 1. Flame Aura Ring with 2D Image Icon Asset
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
             ctx.save();
@@ -305,20 +353,27 @@ export class WeaponManager {
             ctx.lineWidth = 3;
             ctx.stroke();
 
-            ctx.strokeStyle = '#facc15';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(px, py, w.config.radius - 4, 0, Math.PI * 2);
-            ctx.stroke();
+            // Render 2D Flame Ring Icon Asset in center of halo
+            const auraImg = weaponImages['flameAura'];
+            if (auraImg && (auraImg.complete || auraImg.width)) {
+                ctx.save();
+                ctx.globalAlpha = 0.35;
+                ctx.beginPath();
+                ctx.arc(px, py, w.config.radius * 0.7, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(auraImg, px - w.config.radius * 0.7, py - w.config.radius * 0.7, w.config.radius * 1.4, w.config.radius * 1.4);
+                ctx.restore();
+            }
 
             ctx.restore();
         }
 
-        // 2. High-Definition Orbiting Jiuyou Spirit Swords
+        // 2. Orbiting Jiuyou Spirit Swords with 2D Image Icon Asset
         if (this.weapons['swords']) {
             const w = this.weapons['swords'];
             const swordCount = w.config.count;
             const radius = w.config.radius;
+            const swordImg = weaponImages['swords'];
 
             ctx.save();
             ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
@@ -337,28 +392,23 @@ export class WeaponManager {
                 ctx.translate(sx, sy);
                 ctx.rotate(angle + Math.PI / 2);
 
-                ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
-                ctx.fillRect(-6, -26, 12, 34);
-
-                ctx.fillStyle = '#0284c7';
-                ctx.fillRect(-4, -24, 8, 30);
-
-                ctx.fillStyle = '#38bdf8';
-                ctx.fillRect(-2, -24, 4, 30);
-
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(-1, -22, 2, 28);
-
-                ctx.fillStyle = '#facc15';
-                ctx.fillRect(-9, 4, 18, 5);
-                ctx.fillStyle = '#eab308';
-                ctx.fillRect(-3, 9, 6, 8);
+                if (swordImg && (swordImg.complete || swordImg.width)) {
+                    // Render 2D Jiuyou Sword Image Sprite
+                    ctx.shadowColor = 'rgba(56, 189, 248, 0.8)';
+                    ctx.shadowBlur = 10;
+                    ctx.drawImage(swordImg, -20, -28, 40, 56);
+                } else {
+                    ctx.fillStyle = '#0284c7';
+                    ctx.fillRect(-4, -24, 8, 30);
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.fillRect(-2, -24, 4, 30);
+                }
 
                 ctx.restore();
             }
         }
 
-        // 3. High-Definition Projectiles
+        // 3. Projectiles with 2D Image Icon Assets (Fireballs & Boomerangs)
         this.projectiles.forEach(p => {
             const sx = camera.getScreenX(p.x, canvasWidth);
             const sy = camera.getScreenY(p.y, canvasHeight);
@@ -366,55 +416,48 @@ export class WeaponManager {
             ctx.save();
             ctx.translate(sx, sy);
 
+            const pImg = weaponImages[p.type];
+
             if (p.type === 'boomerang') {
                 ctx.rotate(p.spinAngle);
+                ctx.shadowColor = 'rgba(0, 255, 255, 0.8)';
+                ctx.shadowBlur = 14;
 
-                ctx.shadowColor = 'rgba(0, 255, 255, 0.6)';
-                ctx.shadowBlur = 12;
-
-                ctx.strokeStyle = '#00ffff';
-                ctx.lineWidth = 6;
-                ctx.beginPath();
-                ctx.arc(0, 0, p.radius, 0.2, Math.PI * 1.5);
-                ctx.stroke();
-
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2.5;
-                ctx.beginPath();
-                ctx.arc(0, 0, p.radius, 0.2, Math.PI * 1.5);
-                ctx.stroke();
+                if (pImg && (pImg.complete || pImg.width)) {
+                    ctx.drawImage(pImg, -p.radius * 1.3, -p.radius * 1.3, p.radius * 2.6, p.radius * 2.6);
+                } else {
+                    ctx.strokeStyle = '#00ffff';
+                    ctx.lineWidth = 6;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius, 0.2, Math.PI * 1.5);
+                    ctx.stroke();
+                }
             } else if (p.type === 'fireball') {
-                ctx.shadowColor = 'rgba(249, 115, 22, 0.8)';
+                ctx.shadowColor = 'rgba(249, 115, 22, 0.9)';
                 ctx.shadowBlur = 16;
 
-                ctx.beginPath();
-                ctx.arc(0, 0, p.radius + 6, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(249, 115, 22, 0.4)';
-                ctx.fill();
-
-                const fbGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, p.radius);
-                fbGrad.addColorStop(0, '#fef08a');
-                fbGrad.addColorStop(0.5, '#f97316');
-                fbGrad.addColorStop(1, '#dc2626');
-
-                ctx.beginPath();
-                ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
-                ctx.fillStyle = fbGrad;
-                ctx.fill();
+                if (pImg && (pImg.complete || pImg.width)) {
+                    ctx.drawImage(pImg, -p.radius * 1.4, -p.radius * 1.4, p.radius * 2.8, p.radius * 2.8);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = '#f97316';
+                    ctx.fill();
+                }
             }
 
             ctx.restore();
         });
 
-        // 4. High-Definition Lightning Bolts
+        // 4. Lightning Strikes with 2D Image Asset Impact
         this.effects.forEach(e => {
             if (e.type === 'lightning') {
                 const sx = camera.getScreenX(e.x, canvasWidth);
                 const sy = camera.getScreenY(e.y, canvasHeight);
+                const thunderImg = weaponImages['lightning'];
 
                 ctx.save();
-
-                ctx.shadowColor = 'rgba(250, 204, 21, 0.8)';
+                ctx.shadowColor = 'rgba(250, 204, 21, 0.9)';
                 ctx.shadowBlur = 18;
 
                 ctx.strokeStyle = '#facc15';
@@ -429,18 +472,11 @@ export class WeaponManager {
 
                 ctx.strokeStyle = '#ffffff';
                 ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(sx, sy - 180);
-                ctx.lineTo(sx - 15, sy - 120);
-                ctx.lineTo(sx + 15, sy - 60);
-                ctx.lineTo(sx - 5, sy - 20);
-                ctx.lineTo(sx, sy);
                 ctx.stroke();
 
-                ctx.beginPath();
-                ctx.arc(sx, sy, 22, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(250, 204, 21, 0.3)';
-                ctx.fill();
+                if (thunderImg && (thunderImg.complete || thunderImg.width)) {
+                    ctx.drawImage(thunderImg, sx - 24, sy - 24, 48, 48);
+                }
 
                 ctx.restore();
             }
