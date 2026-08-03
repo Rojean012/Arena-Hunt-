@@ -18,15 +18,15 @@ export const GameConfig = {
         magnetRadius: 80
     },
     xp: {
-        baseXP: 10,
+        baseXP: 20,
         multiplier: 1.25
     },
     gems: {
-        emerald: { value: 1, color: '#2ecc71', radius: 8 },
-        large_emerald: { value: 3, color: '#27ae60', radius: 10 },
-        boss_emerald: { value: 5, color: '#1abc9c', radius: 12 }
+        emerald: { value: 2, color: '#2ecc71', radius: 8 },
+        large_emerald: { value: 5, color: '#27ae60', radius: 10 },
+        boss_emerald: { value: 12, color: '#1abc9c', radius: 12 }
     },
-    upgradeThresholds: [5, 12, 22, 35, 50, 70, 95, 125, 160, 200, 250, 310, 380, 460, 550],
+    upgradeThresholds: [20, 50, 90, 140, 200, 270, 350, 440, 540, 650, 780, 920, 1070, 1230, 1400],
     enemies: {
         slime: {
             radius: 18,

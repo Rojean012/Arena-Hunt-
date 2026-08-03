@@ -1,241 +1,231 @@
 import { input } from '../core/Input.js';
+import { soundManager } from '../audio/SoundManager.js';
 
-// Preload 2D Power Icon Image Assets for All Upgrade Cards
-const powerIcons = {};
-function loadPowerIcon(id, src) {
+// Preload 2D Power Card Icon Assets with Fast Offscreen Canvases
+const powerCardImages = {};
+
+function loadPowerCardImage(id, src) {
     const img = new Image();
     img.src = src;
-    powerIcons[id] = img;
+    img.onload = () => {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 120;
+            canvas.height = 120;
+            const ctx = canvas.getContext('2d');
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, 120, 120);
+
+            const imgData = ctx.getImageData(0, 0, 120, 120);
+            const data = imgData.data;
+
+            const bgR = data[0];
+            const bgG = data[1];
+            const bgB = data[2];
+
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+
+                const dr = Math.abs(r - bgR);
+                const dg = Math.abs(g - bgG);
+                const db = Math.abs(b - bgB);
+                const diff = Math.max(dr, Math.max(dg, db));
+
+                if ((r > 240 && g > 240 && b > 240) || (r < 25 && g < 25 && b < 25) || diff < 20) {
+                    data[i + 3] = 0;
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+            powerCardImages[id] = canvas;
+        } catch (e) {
+            powerCardImages[id] = img;
+        }
+    };
 }
 
-loadPowerIcon('swords', '/assets/images/sword_icon.jpg');
-loadPowerIcon('fireball', '/assets/images/fireball_icon.jpg');
-loadPowerIcon('lightning', '/assets/images/thunder_icon.jpg');
-loadPowerIcon('flameAura', '/assets/images/flame_ring_icon.jpg');
-loadPowerIcon('boomerang', '/assets/images/boomerang_icon.jpg');
-
-loadPowerIcon('stat_speed', '/assets/images/boots_speed_icon.jpg');
-loadPowerIcon('stat_magnet', '/assets/images/gem_magnet_icon.jpg');
-loadPowerIcon('stat_health', '/assets/images/vitality_elixir_icon.jpg');
+// Load all 2D Power Icons from /assets/images/
+loadPowerCardImage('swords', '/assets/images/sword_power_icon.jpg');
+loadPowerCardImage('fireball', '/assets/images/fireball_power_icon.jpg');
+loadPowerCardImage('lightning', '/assets/images/thunder_icon_v2.jpg');
+loadPowerCardImage('flameAura', '/assets/images/flame_ring_icon_v2.jpg');
+loadPowerCardImage('boomerang', '/assets/images/boomerang_power_icon.jpg');
+loadPowerCardImage('stat_speed', '/assets/images/boots_speed_icon.jpg');
+loadPowerCardImage('stat_magnet', '/assets/images/gem_magnet_icon_v2.jpg');
+loadPowerCardImage('stat_health', '/assets/images/vitality_elixir_icon.jpg');
 
 export class CardUpgradeModal {
     constructor() {
         this.hoveredIndex = -1;
-        this.openCooldown = 0;
-    }
-
-    clearInput() {
-        if (input.consumeClick) {
-            input.consumeClick();
-        } else if (input.clearJustPressed) {
-            input.clearJustPressed();
-        } else {
-            input.mouse.isJustPressed = false;
-            input.mouse.clickPending = false;
-            input.mouse.isDown = false;
-        }
     }
 
     update(levelManager, weaponManager, player, screenWidth, screenHeight) {
-        if (!levelManager.isLevelingUp) return;
+        if (!levelManager || !levelManager.isLevelingUp) return;
 
         const options = levelManager.currentOptions;
-        const totalCards = options.length;
+        if (!options || options.length === 0) return;
+
+        const sw = (screenWidth && Number.isFinite(screenWidth) && screenWidth > 0) ? screenWidth : (window.innerWidth || 1920);
+        const sh = (screenHeight && Number.isFinite(screenHeight) && screenHeight > 0) ? screenHeight : (window.innerHeight || 1080);
+
         const cardWidth = 260;
         const cardHeight = 360;
         const gap = 30;
-
-        const startX = (screenWidth - (totalCards * cardWidth + (totalCards - 1) * gap)) / 2;
-        const startY = (screenHeight - cardHeight) / 2;
+        const totalCards = options.length;
+        const totalW = totalCards * cardWidth + (totalCards - 1) * gap;
+        const startX = (sw - totalW) / 2;
+        const cardY = (sh - cardHeight) / 2 + 30;
 
         const mx = input.mouse.x;
         const my = input.mouse.y;
 
         this.hoveredIndex = -1;
+
         for (let i = 0; i < totalCards; i++) {
             const cx = startX + i * (cardWidth + gap);
-            const cy = startY;
-
-            if (mx >= cx && mx <= cx + cardWidth && my >= cy && my <= cy + cardHeight) {
+            if (mx >= cx && mx <= cx + cardWidth && my >= cardY && my <= cardY + cardHeight) {
                 this.hoveredIndex = i;
-                break;
-            }
-        }
 
-        // Gate click inputs on the very first frame the modal opens
-        if (levelManager.justOpened) {
-            levelManager.justOpened = false;
-            this.openCooldown = 8;
-            this.clearInput();
-            return;
-        }
+                if (input.mouse.clicked || input.mouse.justClicked) {
+                    input.mouse.clicked = false;
+                    input.mouse.justClicked = false;
+                    levelManager.selectUpgrade(i, weaponManager, player);
 
-        if (this.openCooldown > 0) {
-            this.openCooldown--;
-            this.clearInput();
-            return;
-        }
-
-        // 100% Reliable Card Click Response
-        const isClicked = input.wasJustClicked ? input.wasJustClicked() : (input.mouse.isJustPressed || input.mouse.clickPending || input.mouse.isDown);
-        if (isClicked) {
-            if (this.hoveredIndex !== -1) {
-                this.clearInput();
-                levelManager.selectUpgrade(this.hoveredIndex, weaponManager, player);
+                    if (soundManager && soundManager.playButtonClick) {
+                        soundManager.playButtonClick();
+                    }
+                    break;
+                }
             }
         }
     }
 
     render(ctx, levelManager, screenWidth, screenHeight) {
-        if (!levelManager.isLevelingUp) return;
+        if (!levelManager || !levelManager.isLevelingUp) return;
 
         const options = levelManager.currentOptions;
-        const totalCards = options.length;
-        const cardWidth = 260;
-        const cardHeight = 360;
-        const gap = 30;
+        if (!options || options.length === 0) return;
 
-        const startX = (screenWidth - (totalCards * cardWidth + (totalCards - 1) * gap)) / 2;
-        const startY = (screenHeight - cardHeight) / 2;
+        const sw = (screenWidth && Number.isFinite(screenWidth) && screenWidth > 0) ? screenWidth : (window.innerWidth || 1920);
+        const sh = (screenHeight && Number.isFinite(screenHeight) && screenHeight > 0) ? screenHeight : (window.innerHeight || 1080);
 
         ctx.save();
 
-        // Dark Glassmorphism Backdrop Overlay
+        // 1. Full Screen Overlay Backdrop
         ctx.fillStyle = 'rgba(2, 6, 23, 0.85)';
-        ctx.fillRect(0, 0, screenWidth, screenHeight);
+        ctx.fillRect(0, 0, sw, sh);
 
-        // Header Title
-        ctx.textAlign = 'center';
-        ctx.font = '900 32px "Cinzel", serif';
+        // 2. Banner Header
         ctx.fillStyle = '#facc15';
-        ctx.shadowColor = 'rgba(250, 204, 21, 0.6)';
-        ctx.shadowBlur = 12;
-        ctx.fillText('SELECT TREASURE SKILL', screenWidth / 2, startY - 40);
+        ctx.font = '900 36px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = '#fef08a';
+        ctx.shadowBlur = 16;
+        ctx.fillText('LEVEL UP! CHOOSE A POWER', sw / 2, (sh / 2) - 220);
         ctx.shadowBlur = 0;
 
-        // Render Upgrade Cards
-        options.forEach((opt, i) => {
-            const cx = startX + i * (cardWidth + gap);
-            const cy = startY;
-            const isHovered = (i === this.hoveredIndex);
+        const cardWidth = 260;
+        const cardHeight = 360;
+        const gap = 30;
+        const totalCards = options.length;
+        const totalW = totalCards * cardWidth + (totalCards - 1) * gap;
+        const startX = (sw - totalW) / 2;
+        const cardY = (sh - cardHeight) / 2 + 30;
+
+        // 3. Render 3 Centered Upgrade Cards
+        options.forEach((card, idx) => {
+            const cx = startX + idx * (cardWidth + gap);
+            const isHovered = (idx === this.hoveredIndex);
 
             ctx.save();
-            ctx.translate(cx, cy);
+            ctx.translate(cx, cardY);
 
             if (isHovered) {
-                ctx.translate(0, -8);
-            }
-
-            // Card Dark Slate Gradient Background
-            const bgGrad = ctx.createLinearGradient(0, 0, 0, cardHeight);
-            if (isHovered) {
-                bgGrad.addColorStop(0, '#1e293b');
-                bgGrad.addColorStop(1, '#0f172a');
+                ctx.translate(0, -10);
+                ctx.shadowColor = '#facc15';
+                ctx.shadowBlur = 25;
             } else {
-                bgGrad.addColorStop(0, '#0f172a');
-                bgGrad.addColorStop(1, '#020617');
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 12;
             }
 
-            ctx.fillStyle = bgGrad;
+            // Card Body
+            const cardBg = isHovered ? '#1e293b' : '#0f172a';
+            const borderCol = isHovered ? '#facc15' : '#334155';
+
+            ctx.fillStyle = cardBg;
             ctx.beginPath();
             ctx.roundRect(0, 0, cardWidth, cardHeight, 16);
             ctx.fill();
 
-            // Gold Filigree Border
-            ctx.strokeStyle = isHovered ? '#00ffff' : '#eab308';
-            ctx.lineWidth = isHovered ? 3.5 : 2;
+            ctx.strokeStyle = borderCol;
+            ctx.lineWidth = isHovered ? 3 : 2;
             ctx.stroke();
 
-            // Rarity Tag Badge
-            ctx.fillStyle = opt.rarity === 'RARE' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(56, 189, 248, 0.25)';
-            ctx.beginPath();
-            ctx.roundRect(cardWidth / 2 - 50, 16, 100, 22, 11);
-            ctx.fill();
-            ctx.font = '700 11px "Outfit", sans-serif';
-            ctx.fillStyle = opt.rarity === 'RARE' ? '#f87171' : '#38bdf8';
-            ctx.fillText(opt.rarity || 'COMMON', cardWidth / 2, 31);
+            // Card Title
+            ctx.fillStyle = isHovered ? '#facc15' : '#f8fafc';
+            ctx.font = '700 18px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(card.name, cardWidth / 2, 45);
 
-            // 2D Power Image Icon Frame (For ALL 8 Weapons & Stats!)
-            const iconImg = powerIcons[opt.id];
-            const iconSize = 90;
-            const iconX = (cardWidth - iconSize) / 2;
-            const iconY = 50;
+            // Rarity Tag
+            ctx.fillStyle = card.rarity === 'RARE' ? '#c084fc' : '#38bdf8';
+            ctx.font = '600 13px "Segoe UI", sans-serif';
+            ctx.fillText(card.rarity || 'COMMON', cardWidth / 2, 70);
 
-            if (iconImg && iconImg.complete && iconImg.width) {
-                ctx.save();
-                ctx.beginPath();
-                ctx.roundRect(iconX, iconY, iconSize, iconSize, 12);
-                ctx.clip();
-                ctx.drawImage(iconImg, iconX, iconY, iconSize, iconSize);
-                ctx.restore();
+            // Render 2D Power Icon Asset
+            const iconImg = powerCardImages[card.id];
+            const iconX = (cardWidth - 90) / 2;
+            const iconY = 90;
 
-                ctx.strokeStyle = isHovered ? '#00ffff' : '#ca8a04';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.roundRect(iconX, iconY, iconSize, iconSize, 12);
-                ctx.stroke();
+            if (iconImg && (iconImg.complete || iconImg.width)) {
+                ctx.drawImage(iconImg, iconX, iconY, 90, 90);
             } else {
-                ctx.font = '48px "Outfit", sans-serif';
-                ctx.fillText(opt.icon || '⚔️', cardWidth / 2, iconY + 60);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+                ctx.fillRect(iconX, iconY, 90, 90);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '40px sans-serif';
+                ctx.fillText(card.icon || '⚔️', cardWidth / 2, iconY + 58);
             }
 
-            // Card Title Name
-            ctx.font = '700 16px "Cinzel", serif';
-            ctx.fillStyle = '#f1f5f9';
-            ctx.fillText(opt.name || 'UPGRADE', cardWidth / 2, 175);
-
-            // Level Tag
-            ctx.font = '700 13px "Outfit", sans-serif';
-            ctx.fillStyle = '#facc15';
-            ctx.fillText(`LEVEL ${opt.level || 1}`, cardWidth / 2, 198);
-
-            // Description Text
-            ctx.font = '500 13px "Outfit", sans-serif';
+            // Description Box
             ctx.fillStyle = '#94a3b8';
-            this.wrapText(ctx, opt.description || '', cardWidth / 2, 230, cardWidth - 36, 18);
+            ctx.font = '400 14px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            
+            const words = (card.description || '').split(' ');
+            let line = '';
+            let lineY = 220;
 
-            // Select Button Badge
-            const btnW = 160;
-            const btnH = 34;
-            const btnX = (cardWidth - btnW) / 2;
-            const btnY = cardHeight - 48;
+            words.forEach(w => {
+                const test = line + w + ' ';
+                if (ctx.measureText(test).width > cardWidth - 30) {
+                    ctx.fillText(line, cardWidth / 2, lineY);
+                    line = w + ' ';
+                    lineY += 20;
+                } else {
+                    line = test;
+                }
+            });
+            if (line) ctx.fillText(line, cardWidth / 2, lineY);
 
-            ctx.fillStyle = isHovered ? '#0284c7' : '#1e293b';
+            // Select Button
+            ctx.fillStyle = isHovered ? '#facc15' : '#334155';
             ctx.beginPath();
-            ctx.roundRect(btnX, btnY, btnW, btnH, 8);
+            ctx.roundRect(25, cardHeight - 55, cardWidth - 50, 40, 8);
             ctx.fill();
 
-            ctx.strokeStyle = isHovered ? '#38bdf8' : '#475569';
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-
-            ctx.font = '700 12px "Outfit", sans-serif';
-            ctx.fillStyle = isHovered ? '#ffffff' : '#cbd5e1';
-            ctx.fillText(isHovered ? 'SELECT SKILL' : 'CHOOSE', cardWidth / 2, btnY + 22);
+            ctx.fillStyle = isHovered ? '#0f172a' : '#f8fafc';
+            ctx.font = '700 15px "Segoe UI", sans-serif';
+            ctx.fillText(isHovered ? 'SELECT POWER' : 'CHOOSE', cardWidth / 2, cardHeight - 30);
 
             ctx.restore();
         });
 
         ctx.restore();
-    }
-
-    wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-        const words = text.split(' ');
-        let line = '';
-        let currentY = y;
-
-        for (let n = 0; n < words.length; n++) {
-            const testLine = line + words[n] + ' ';
-            const metrics = ctx.measureText(testLine);
-            const testWidth = metrics.width;
-            if (testWidth > maxWidth && n > 0) {
-                ctx.fillText(line, x, currentY);
-                line = words[n] + ' ';
-                currentY += lineHeight;
-            } else {
-                line = testLine;
-            }
-        }
-        ctx.fillText(line, x, currentY);
     }
 }

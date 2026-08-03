@@ -59,13 +59,13 @@ export class CollisionSystem {
             }
         });
 
-        // 3. Gems vs Player
+        // 3. Gems vs Player (Give exact gem.value XP!)
         gems.forEach((gem) => {
             if (gem.dead) return;
             if (player.isCollidingWith(gem)) {
                 gem.dead = true;
                 if (particles) particles.spawnCoinSparkle(gem.x, gem.y);
-                if (onXPCollected) onXPCollected(gem.value * 10);
+                if (onXPCollected) onXPCollected(gem.value || 2);
             }
         });
 
