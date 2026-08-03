@@ -1,9 +1,5 @@
 import { GameConfig } from '../config/GameConfig.js';
 
-// Preload Wave Warning Banner V3 2D Image Asset
-const waveBannerImage = new Image();
-waveBannerImage.src = '/assets/images/wave_banner_v3.jpg';
-
 export class UIRenderer {
     renderHUD(ctx, player, score, coins, highScore, waveTier, levelManager, weaponManager, spawner, canvasWidth, canvasHeight) {
         ctx.save();
@@ -30,13 +26,13 @@ export class UIRenderer {
         ctx.textAlign = 'center';
         ctx.fillText(`HP: ${Math.ceil(player.health)} / ${player.maxHealth}`, hpX + hpW / 2, hpY + 16);
 
-        // 2. Score, Emerald Gems Counter Below Score, and Coins (Outfit Font)
+        // 2. Score, Emerald Gems Counter Below Score, and Coins
         ctx.textAlign = 'left';
         ctx.font = '900 22px "Outfit", sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.fillText(`Score: ${score}`, 20, 68);
 
-        // Emerald Gem Counter directly below Score!
+        // Emerald Gem Counter directly below Score
         const targetGems = levelManager.targetGems;
         const currentGems = levelManager.totalGems;
 
@@ -74,37 +70,68 @@ export class UIRenderer {
             slotX += 38;
         });
 
-        // 4. PROMINENT WAVE SIGNALING BANNER V3 (Cinzel Font)
+        // 4. PRISTINE CUSTOM XIANXIA WAVE WARNING BANNER (Zero AI slop!)
         if (spawner && spawner.waveNoticeTimer > 0) {
-            const bannerW = 680;
-            const bannerH = 110;
+            const bannerW = 640;
+            const bannerH = 84;
             const bannerX = (canvasWidth - bannerW) / 2;
-            const bannerY = canvasHeight * 0.20;
+            const bannerY = canvasHeight * 0.18;
 
             const alpha = Math.min(1, spawner.waveNoticeTimer / 30);
 
             ctx.save();
             ctx.globalAlpha = alpha;
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
 
-            // Draw Aspect-Preserved 2D Wave Banner V3 Plaque
-            if (waveBannerImage.complete && waveBannerImage.naturalWidth !== 0) {
-                ctx.drawImage(waveBannerImage, bannerX, bannerY, bannerW, bannerH);
-            } else {
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
-                ctx.fillRect(bannerX, bannerY, bannerW, bannerH);
-            }
+            // Outer Shadow
+            ctx.shadowColor = 'rgba(220, 38, 38, 0.6)';
+            ctx.shadowBlur = 20;
 
+            // Plaque Body (Dark Slate Gradient)
+            const plaqueGrad = ctx.createLinearGradient(bannerX, bannerY, bannerX, bannerY + bannerH);
+            plaqueGrad.addColorStop(0, '#1e1b4b');
+            plaqueGrad.addColorStop(0.5, '#0f172a');
+            plaqueGrad.addColorStop(1, '#020617');
+
+            ctx.fillStyle = plaqueGrad;
+            ctx.beginPath();
+            ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 14);
+            ctx.fill();
+
+            // Reset Shadow
+            ctx.shadowColor = 'transparent';
+
+            // Gold Filigree Border
+            ctx.strokeStyle = '#eab308';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 14);
+            ctx.stroke();
+
+            // Inner Crimson Glowing Accent Line
             ctx.strokeStyle = '#dc2626';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(bannerX, bannerY, bannerW, bannerH);
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.roundRect(bannerX + 6, bannerY + 6, bannerW - 12, bannerH - 12, 10);
+            ctx.stroke();
+
+            // Corner Gem Accents
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(bannerX + 10, bannerY + 10, 6, 6);
+            ctx.fillRect(bannerX + bannerW - 16, bannerY + 10, 6, 6);
+            ctx.fillRect(bannerX + 10, bannerY + bannerH - 16, 6, 6);
+            ctx.fillRect(bannerX + bannerW - 16, bannerY + bannerH - 16, 6, 6);
 
             // Banner Text Overlay (Cinzel Font)
             ctx.textAlign = 'center';
-            ctx.fillStyle = '#ffffff';
             ctx.font = '900 24px "Cinzel", "Outfit", serif';
-            ctx.fillText(spawner.waveNoticeText, canvasWidth / 2, bannerY + 62);
+
+            const textGrad = ctx.createLinearGradient(0, bannerY + 25, 0, bannerY + 55);
+            textGrad.addColorStop(0, '#ffffff');
+            textGrad.addColorStop(0.5, '#fef08a');
+            textGrad.addColorStop(1, '#facc15');
+
+            ctx.fillStyle = textGrad;
+            ctx.fillText(spawner.waveNoticeText, canvasWidth / 2, bannerY + 50);
 
             ctx.restore();
         }

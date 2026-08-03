@@ -117,7 +117,9 @@ export class WeaponManager {
                 w.cooldownTimer = 0;
                 const target = this.findClosestEnemy(player, enemies, 500);
                 if (target) {
-                    soundManager.playShoot();
+                    if (soundManager && soundManager.playShoot) {
+                        soundManager.playShoot();
+                    }
                     const angle = Math.atan2(target.y - player.y, target.x - player.x);
                     this.projectiles.push({
                         type: 'fireball',
@@ -126,7 +128,7 @@ export class WeaponManager {
                         vx: Math.cos(angle) * w.config.speed,
                         vy: Math.sin(angle) * w.config.speed,
                         damage: w.config.baseDamage,
-                        radius: 10,
+                        radius: 12,
                         life: 120,
                         dead: false
                     });
@@ -134,7 +136,34 @@ export class WeaponManager {
             }
         }
 
-        // 4. Lightning
+        // 4. Boomerang
+        if (this.weapons['boomerang']) {
+            const w = this.weapons['boomerang'];
+            w.cooldownTimer++;
+            if (w.cooldownTimer >= w.config.cooldown) {
+                w.cooldownTimer = 0;
+                const target = this.findClosestEnemy(player, enemies, 450);
+                const angle = target ? Math.atan2(target.y - player.y, target.x - player.x) : Math.random() * Math.PI * 2;
+                
+                this.projectiles.push({
+                    type: 'boomerang',
+                    x: player.x,
+                    y: player.y,
+                    startX: player.x,
+                    startY: player.y,
+                    vx: Math.cos(angle) * w.config.speed,
+                    vy: Math.sin(angle) * w.config.speed,
+                    damage: w.config.baseDamage,
+                    radius: 14,
+                    spinAngle: 0,
+                    returning: false,
+                    life: 120,
+                    dead: false
+                });
+            }
+        }
+
+        // 5. Lightning
         if (this.weapons['lightning']) {
             const w = this.weapons['lightning'];
             w.cooldownTimer++;
@@ -158,10 +187,29 @@ export class WeaponManager {
             }
         }
 
-        // 5. Update Projectiles
+        // Update Projectiles (Fireballs & Boomerangs)
         this.projectiles.forEach(p => {
-            p.x += p.vx;
-            p.y += p.vy;
+            if (p.type === 'boomerang') {
+                p.spinAngle += 0.25;
+                if (!p.returning) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (Math.hypot(p.x - p.startX, p.y - p.startY) > 280) {
+                        p.returning = true;
+                    }
+                } else {
+                    const angle = Math.atan2(player.y - p.y, player.x - p.x);
+                    p.x += Math.cos(angle) * (w ? w.config.speed * 1.2 : 9);
+                    p.y += Math.sin(angle) * (w ? w.config.speed * 1.2 : 9);
+                    if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + 10) {
+                        p.dead = true;
+                    }
+                }
+            } else {
+                p.x += p.vx;
+                p.y += p.vy;
+            }
+
             p.life--;
             if (p.life <= 0) p.dead = true;
 
@@ -169,7 +217,7 @@ export class WeaponManager {
                 if (enemy.dead || p.dead) return;
                 if (Math.hypot(enemy.x - p.x, enemy.y - p.y) < enemy.radius + p.radius) {
                     const killed = enemy.takeDamage(p.damage);
-                    p.dead = true;
+                    if (p.type === 'fireball') p.dead = true;
                     particles.spawnBlood(enemy.x, enemy.y, 8);
                     if (killed && onEnemyDefeated) {
                         onEnemyDefeated(enemy);
@@ -212,21 +260,21 @@ export class WeaponManager {
         const px = camera.getScreenX(player.x, canvasWidth);
         const py = camera.getScreenY(player.y, canvasHeight);
 
-        // Flame Aura
+        // 1. Flame Aura Halo
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
             ctx.save();
             ctx.beginPath();
             ctx.arc(px, py, w.config.radius, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(231, 76, 60, 0.15)';
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
             ctx.fill();
-            ctx.strokeStyle = '#e74c3c';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2.5;
             ctx.stroke();
             ctx.restore();
         }
 
-        // Orbiting Swords
+        // 2. Refined Orbiting Swords (Jiuyou Spirit Blades)
         if (this.weapons['swords']) {
             const w = this.weapons['swords'];
             const swordCount = w.config.count;
@@ -241,46 +289,68 @@ export class WeaponManager {
                 ctx.translate(sx, sy);
                 ctx.rotate(angle + Math.PI / 2);
 
-                ctx.fillStyle = '#ecf0f1';
-                ctx.fillRect(-3, -20, 6, 25);
-                ctx.fillStyle = '#f1c40f';
-                ctx.fillRect(-6, 5, 12, 4);
+                // Blade
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(-3, -22, 6, 26);
+                // Edge Highlight
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-1, -22, 2, 26);
+                // Gold Hilt & Crossguard
+                ctx.fillStyle = '#facc15';
+                ctx.fillRect(-7, 4, 14, 4);
 
                 ctx.restore();
             }
         }
 
-        // Fireball Projectiles
+        // 3. Refined Projectiles (Fireball & Boomerang)
         this.projectiles.forEach(p => {
             const sx = camera.getScreenX(p.x, canvasWidth);
             const sy = camera.getScreenY(p.y, canvasHeight);
 
             ctx.save();
-            ctx.beginPath();
-            ctx.arc(sx, sy, p.radius + 3, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(243, 156, 18, 0.4)';
-            ctx.fill();
+            ctx.translate(sx, sy);
 
-            ctx.beginPath();
-            ctx.arc(sx, sy, p.radius, 0, Math.PI * 2);
-            ctx.fillStyle = '#e67e22';
-            ctx.fill();
+            if (p.type === 'boomerang') {
+                ctx.rotate(p.spinAngle);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.arc(0, 0, p.radius, 0.4, Math.PI * 1.4);
+                ctx.stroke();
+            } else if (p.type === 'fireball') {
+                ctx.beginPath();
+                ctx.arc(0, 0, p.radius + 4, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(249, 115, 22, 0.35)';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ea580c';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(-3, -3, p.radius * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#fef08a';
+                ctx.fill();
+            }
+
             ctx.restore();
         });
 
-        // Lightning Effects
+        // 4. Refined Lightning Strikes
         this.effects.forEach(e => {
             if (e.type === 'lightning') {
                 const sx = camera.getScreenX(e.x, canvasWidth);
                 const sy = camera.getScreenY(e.y, canvasHeight);
 
                 ctx.save();
-                ctx.strokeStyle = '#f1c40f';
+                ctx.strokeStyle = '#facc15';
                 ctx.lineWidth = 4;
                 ctx.beginPath();
-                ctx.moveTo(sx, sy - 150);
-                ctx.lineTo(sx - 10, sy - 90);
-                ctx.lineTo(sx + 10, sy - 40);
+                ctx.moveTo(sx, sy - 160);
+                ctx.lineTo(sx - 12, sy - 100);
+                ctx.lineTo(sx + 12, sy - 45);
                 ctx.lineTo(sx, sy);
                 ctx.stroke();
                 ctx.restore();

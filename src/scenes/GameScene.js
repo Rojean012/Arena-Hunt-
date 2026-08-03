@@ -28,7 +28,7 @@ export class GameScene {
 
         this.player = null;
         this.enemies = [];
-        this.pendingEnemies = []; // Buffer to prevent array mutation during forEach iteration!
+        this.pendingEnemies = [];
         this.gems = [];
         this.coins = [];
         this.enemyProjectiles = [];
@@ -60,13 +60,11 @@ export class GameScene {
 
         this.particles.spawnBlood(enemy.x, enemy.y, 14);
 
-        // Slime split mechanic: Push miniSlimes into pendingEnemies to PREVENT array iteration freezes!
         if (enemy.type === 'slime') {
             this.pendingEnemies.push(new Enemy(enemy.x - 12, enemy.y - 12, 'miniSlime'));
             this.pendingEnemies.push(new Enemy(enemy.x + 12, enemy.y + 12, 'miniSlime'));
         }
 
-        // Standard Enemy = 1 Gem; Boss Enemy = 5 Gems!
         if (enemy.type === 'bear') {
             for (let i = 0; i < 5; i++) {
                 const offsetX = (Math.random() - 0.5) * 40;
@@ -77,7 +75,6 @@ export class GameScene {
             this.gems.push(new Gem(enemy.x, enemy.y, 'emerald'));
         }
 
-        // 30% bonus coin drop
         if (Math.random() < 0.3) {
             this.coins.push(new Coin(enemy.x + 15, enemy.y + 15));
         }
@@ -94,9 +91,9 @@ export class GameScene {
             return;
         }
 
-        // If Leveling up modal is active, update modal & pause game physics
+        // If Leveling up modal is active, pass exact renderer dimensions to update()
         if (this.levelManager.isLevelingUp) {
-            this.upgradeModal.update(this.levelManager, this.weaponManager, this.player);
+            this.upgradeModal.update(this.levelManager, this.weaponManager, this.player, engine.renderer.width, engine.renderer.height);
             return;
         }
 
@@ -135,7 +132,7 @@ export class GameScene {
         // 6. Spawning
         this.spawner.update(this.player, this.enemies, this.camera, engine.renderer.width, engine.renderer.height);
 
-        // 7. Collisions (Score & XP are ONLY awarded when gems/coins are picked up!)
+        // 7. Collisions
         this.collisions.checkCollisions(
             this.player,
             this.enemies,
@@ -150,7 +147,7 @@ export class GameScene {
             this.camera
         );
 
-        // 8. Safe Cleanup & Flush Pending Split Enemies (Zero Freezes!)
+        // 8. Safe Cleanup & Flush Pending Split Enemies
         this.enemies = this.enemies.filter(e => !e.dead);
         if (this.pendingEnemies.length > 0) {
             this.enemies.push(...this.pendingEnemies);
