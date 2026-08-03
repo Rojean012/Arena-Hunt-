@@ -91,6 +91,8 @@ export class Enemy extends Entity {
     }
 
     update(playerX, playerY, projectiles) {
+        if (this.dead) return;
+
         this.animTimer += 0.12;
         if (this.hitFlash > 0) this.hitFlash--;
 
@@ -363,6 +365,8 @@ export class Enemy extends Entity {
     }
 
     takeDamage(amount) {
+        if (this.dead) return false;
+
         this.health -= amount;
         this.hitFlash = 6;
 
@@ -372,6 +376,7 @@ export class Enemy extends Entity {
 
         if (this.health <= 0) {
             this.health = 0;
+            this.dead = true; // Mark dead immediately so it only triggers ONCE!
             if (soundManager && soundManager.playEnemyDefeat) {
                 soundManager.playEnemyDefeat();
             }
@@ -381,6 +386,8 @@ export class Enemy extends Entity {
     }
 
     render(ctx, screenX, screenY) {
+        if (this.dead) return;
+
         const r = this.radius;
 
         const squishX = 1.0 + Math.sin(this.animTimer * 2) * 0.08;
