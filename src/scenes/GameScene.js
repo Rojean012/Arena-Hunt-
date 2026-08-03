@@ -36,7 +36,12 @@ export class GameScene {
         this.sessionCoins = 0;
     }
 
-    enter() {
+    enter(data = {}) {
+        // If resuming active game session, preserve player, enemies, score & weapons!
+        if (data && data.isResume) {
+            return;
+        }
+
         this.player = new Player(0, 0);
         this.enemies = [];
         this.pendingEnemies = [];

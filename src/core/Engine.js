@@ -23,7 +23,6 @@ export class Engine {
 
         this.isRunning = false;
         
-        // Register SDK lifecycle listeners for tab switching & ads
         platformSDK.registerLifecycleCallbacks({
             onPause: () => this.onAppPause(),
             onResume: () => this.onAppResume(),
@@ -43,7 +42,7 @@ export class Engine {
     }
 
     startGame() {
-        this.sceneManager.switchScene(this.gameScene);
+        this.sceneManager.switchScene(this.gameScene, { isResume: false });
     }
 
     pauseGame() {
@@ -54,7 +53,7 @@ export class Engine {
 
     resumeGame() {
         if (this.sceneManager.currentScene === this.pauseScene) {
-            this.sceneManager.switchScene(this.gameScene);
+            this.sceneManager.switchScene(this.gameScene, { isResume: true });
         }
     }
 

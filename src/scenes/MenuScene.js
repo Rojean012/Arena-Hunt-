@@ -13,18 +13,20 @@ export class MenuScene {
     }
 
     update(engine) {
-        if (input.mouse.isJustPressed) {
+        if (input.mouse.isJustPressed || input.mouse.isDown) {
             const mx = input.mouse.x;
             const my = input.mouse.y;
 
             this.buttons.forEach(btn => {
                 if (mx >= btn.x && mx <= btn.x + btn.w && my >= btn.y && my <= btn.y + btn.h) {
-                    soundManager.playButtonClick();
+                    if (soundManager && soundManager.playButtonClick) {
+                        soundManager.playButtonClick();
+                    }
+                    input.clearJustPressed();
+                    input.mouse.isDown = false;
                     btn.onClick(engine);
                 }
             });
-
-            input.clearJustPressed();
         }
     }
 
@@ -38,35 +40,44 @@ export class MenuScene {
         ctx.fillStyle = '#0f172a';
         ctx.fillRect(0, 0, w, h);
 
-        // Title
+        // Title (Cinzel Font)
         ctx.textAlign = 'center';
-        ctx.fillStyle = '#f1c40f';
-        ctx.font = 'bold 64px Arial';
+        ctx.font = '900 64px "Cinzel", "Outfit", serif';
+
+        const titleGrad = ctx.createLinearGradient(0, h / 2 - 150, 0, h / 2 - 80);
+        titleGrad.addColorStop(0, '#fef08a');
+        titleGrad.addColorStop(0.5, '#eab308');
+        titleGrad.addColorStop(1, '#ca8a04');
+
+        ctx.fillStyle = titleGrad;
         ctx.fillText('ARENA HUNT', w / 2, h / 2 - 120);
 
         ctx.fillStyle = '#94a3b8';
-        ctx.font = 'bold 22px Arial';
-        ctx.fillText('Action Roguelike Survivor', w / 2, h / 2 - 70);
+        ctx.font = '700 22px "Outfit", sans-serif';
+        ctx.fillText('Renegade Immortal Survivor', w / 2, h / 2 - 70);
 
         // High Score
         const highScore = storageSystem.getHighScore();
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 22px Arial';
+        ctx.font = '700 20px "Outfit", sans-serif';
         ctx.fillText(`Best Score: ${highScore}`, w / 2, h / 2 - 20);
 
         // Start Game Button
         const playBtn = { x: w / 2 - 140, y: h / 2 + 30, w: 280, h: 60 };
-        ctx.fillStyle = '#2ecc71';
-        ctx.fillRect(playBtn.x, playBtn.y, playBtn.w, playBtn.h);
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.roundRect(playBtn.x, playBtn.y, playBtn.w, playBtn.h, 16);
+        ctx.fill();
+
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 26px Arial';
+        ctx.font = '900 24px "Outfit", sans-serif';
         ctx.fillText('START GAME', w / 2, playBtn.y + 40);
         this.buttons.push({ ...playBtn, onClick: (engine) => engine.startGame() });
 
         // Game Instructions
         ctx.fillStyle = '#64748b';
-        ctx.font = '16px Arial';
-        ctx.fillText('Move with WASD / Arrow Keys | Defeat monsters & collect Gems to get In-Game Upgrades!', w / 2, h - 50);
+        ctx.font = '500 15px "Outfit", sans-serif';
+        ctx.fillText('Move with WASD / Arrow Keys | Collect Emerald Gems to unlock Xianxia Powers!', w / 2, h - 50);
     }
 
     exit() {}

@@ -14,20 +14,18 @@ function loadEnemySprite(type, src) {
             canvas.width = img.width;
             canvas.height = img.height;
             const ctx = canvas.getContext('2d');
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0);
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imgData.data;
 
-            // Key out white / light background pixels
+            // Key out white / light background pixels ONCE during load
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
                 const g = data[i + 1];
                 const b = data[i + 2];
                 if (r > 190 && g > 190 && b > 190) {
-                    data[i + 3] = 0; // Make background transparent
+                    data[i + 3] = 0;
                 }
             }
 
@@ -217,9 +215,6 @@ export class Enemy extends Entity {
         ctx.translate(screenX, screenY + bobY);
         ctx.scale(squishX, squishY);
 
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-
         // Charger Red Telegraph Arc
         if (this.type === 'bear' && this.isCharging) {
             ctx.fillStyle = 'rgba(231, 76, 60, 0.4)';
@@ -231,9 +226,7 @@ export class Enemy extends Entity {
         // Render 2D Enemy Sprite Image Asset
         const sprite = enemySprites[this.type];
         if (sprite && (sprite.complete || sprite.width)) {
-            ctx.save();
             ctx.drawImage(sprite, -r * 1.3, -r * 1.3, r * 2.6, r * 2.6);
-            ctx.restore();
         } else {
             // Fallback rendering
             ctx.fillStyle = this.hitFlash > 0 ? '#ffffff' : this.color;
