@@ -22,13 +22,28 @@ loadPowerCardImage('stat_health', '/assets/images/powers/vitality_elixir_icon.pn
 export class CardUpgradeModal {
     constructor() {
         this.hoveredIndex = -1;
+        this.openDebounce = 0; // frames to wait before accepting clicks after cards open
     }
 
     update(levelManager, weaponManager, player, screenWidth, screenHeight) {
-        if (!levelManager || !levelManager.isLevelingUp) return;
+        if (!levelManager || !levelManager.isLevelingUp) {
+            this.openDebounce = 0;
+            return;
+        }
 
         const options = levelManager.currentOptions;
         if (!options || options.length === 0) return;
+
+        // Fresh open: reset debounce so clicks during level-up trigger don't fire instantly
+        if (levelManager.justOpened) {
+            this.openDebounce = 4; // wait 4 frames (~67ms at 60fps)
+            levelManager.justOpened = false;
+        }
+
+        if (this.openDebounce > 0) {
+            this.openDebounce--;
+            return;
+        }
 
         const sw = (screenWidth && Number.isFinite(screenWidth) && screenWidth > 0) ? screenWidth : (window.innerWidth || 1920);
         const sh = (screenHeight && Number.isFinite(screenHeight) && screenHeight > 0) ? screenHeight : (window.innerHeight || 1080);
@@ -51,7 +66,7 @@ export class CardUpgradeModal {
             if (mx >= cx && mx <= cx + cardWidth && my >= cardY && my <= cardY + cardHeight) {
                 this.hoveredIndex = i;
 
-                if (input.wasJustClicked() || input.mouse.isDown) {
+                if (input.wasJustClicked()) {
                     input.consumeClick();
                     levelManager.selectUpgrade(i, weaponManager, player);
 

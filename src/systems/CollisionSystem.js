@@ -59,9 +59,22 @@ export class CollisionSystem {
             }
         });
 
-        // 3. Gems vs Player (Give exact gem.value XP!)
+        // 3. Gem Magnet Pull + Gem Collection
+        const magnetR = player.magnetRadius || 140;
         gems.forEach((gem) => {
             if (gem.dead) return;
+
+            const dx = player.x - gem.x;
+            const dy = player.y - gem.y;
+            const dist = Math.hypot(dx, dy);
+
+            // Pull gems within magnetRadius toward player
+            if (dist < magnetR && dist > 1) {
+                const pullSpeed = Math.min(12, 6 + (1 - dist / magnetR) * 10);
+                gem.x += (dx / dist) * pullSpeed;
+                gem.y += (dy / dist) * pullSpeed;
+            }
+
             if (player.isCollidingWith(gem)) {
                 gem.dead = true;
                 if (particles) particles.spawnCoinSparkle(gem.x, gem.y);

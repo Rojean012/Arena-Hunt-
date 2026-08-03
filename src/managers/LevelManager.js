@@ -33,14 +33,24 @@ export class LevelManager {
         }
     }
 
+    // Clean round-number emerald goal tier table
+    static get GEM_TIERS() {
+        return [20, 40, 65, 100, 145, 200, 265, 340, 425, 520, 625, 740, 865, 1000, 1150, 1310, 1480, 1660, 1850, 2050];
+    }
+
     addXP(amount, weaponManager) {
         this.totalGems += amount;
 
         if (this.totalGems >= this.targetGems) {
             this.currentTierIndex++;
-            // Increment Emerald Goal progressively!
-            this.targetGems = Math.floor(this.targetGems * 1.35) + 12;
-            
+            // Use clean tier table; beyond table, add 200 per extra tier
+            const tiers = LevelManager.GEM_TIERS;
+            if (this.currentTierIndex < tiers.length) {
+                this.targetGems = tiers[this.currentTierIndex];
+            } else {
+                this.targetGems = tiers[tiers.length - 1] + (this.currentTierIndex - tiers.length + 1) * 200;
+            }
+
             if (soundManager && soundManager.playCoinCollect) {
                 soundManager.playCoinCollect();
             }
@@ -49,6 +59,7 @@ export class LevelManager {
         }
         return false;
     }
+
 
     generateCardOptions(weaponManager) {
         const pool = [];
