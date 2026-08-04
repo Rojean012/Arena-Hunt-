@@ -148,10 +148,13 @@ export class LevelManager {
             weaponManager.addWeapon(card.id);
         } else if (card.type === 'STAT' && player) {
             if (card.id === 'stat_speed') {
+                player.speedLevel = (player.speedLevel || 0) + 1;
                 player.speed += 0.5;
             } else if (card.id === 'stat_magnet') {
-                player.magnetRadius += 50;
+                player.magnetLevel = (player.magnetLevel || 0) + 1;
+                player.magnetRadius = 80 + player.magnetLevel * 60;
             } else if (card.id === 'stat_health') {
+                player.healthLevel = (player.healthLevel || 0) + 1;
                 player.maxHealth += 25;
                 if (player.heal) player.heal(50);
                 else player.health = Math.min(player.maxHealth, player.health + 50);

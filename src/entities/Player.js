@@ -49,7 +49,10 @@ export class Player extends Entity {
         this.xp = 0;
         this.level = 1;
         this.gemsCollected = 0;
-        this.magnetRadius = 140;
+        this.magnetRadius = 0;
+        this.magnetLevel = 0;
+        this.speedLevel = 0;
+        this.healthLevel = 0;
 
         this.animTimer = 0;
         this.hitFlash = 0;
@@ -70,7 +73,10 @@ export class Player extends Entity {
         this.xp = 0;
         this.level = 1;
         this.gemsCollected = 0;
-        this.magnetRadius = 140;
+        this.magnetRadius = 0;
+        this.magnetLevel = 0;
+        this.speedLevel = 0;
+        this.healthLevel = 0;
 
         this.animTimer = 0;
         this.hitFlash = 0;

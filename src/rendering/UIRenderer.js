@@ -1,4 +1,4 @@
-import { GameConfig } from '../config/GameConfig.js';
+﻿import { GameConfig } from '../config/GameConfig.js';
 
 // Preload Categorized 2D Weapon Textures for Top Right HUD Inventory
 const hudWeaponTextures = {};
@@ -14,6 +14,18 @@ loadHudTexture('fireball', '/assets/images/powers/fireball_icon.png');
 loadHudTexture('lightning', '/assets/images/powers/thunder_icon.png');
 loadHudTexture('flameAura', '/assets/images/powers/flame_ring_icon.png');
 loadHudTexture('boomerang', '/assets/images/powers/boomerang_icon.png');
+loadHudTexture('stat_magnet', '/assets/images/powers/gem_magnet_icon.png');
+loadHudTexture('stat_speed', '/assets/images/powers/boots_speed_icon.png');
+loadHudTexture('stat_health', '/assets/images/powers/vitality_elixir_icon.png');
+
+function toRoman(n) {
+    if (!n || n <= 0) return '';
+    const vals = [10,9,5,4,1];
+    const syms = ['X','IX','V','IV','I'];
+    let result = '';
+    vals.forEach((v,i) => { while(n >= v) { result += syms[i]; n -= v; } });
+    return result;
+}
 
 export class UIRenderer {
     render(ctx, player, score, waveTier, waveTimer, noticeTimer, noticeTitle, canvasWidth, canvasHeight, levelManager, weaponManager, spawner) {
@@ -119,9 +131,46 @@ export class UIRenderer {
                     ctx.fillText(w.config.icon || '⚔️', slotX + 17, 103);
                 }
 
+                // Roman numeral level badge
+                const wLevel = w.level || 1;
+                ctx.fillStyle = '#facc15';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(toRoman(wLevel), slotX + 17, 118); // below the slot at y=118
+
                 slotX += 40;
             });
         }
+        // BUFFS Section below weapons
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '500 13px "Outfit", sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('BUFFS:', cw - 220, 132);
+
+        const buffs = [
+            { id: 'stat_magnet', level: player.magnetLevel || 0 },
+            { id: 'stat_speed', level: player.speedLevel || 0 },
+            { id: 'stat_health', level: player.healthLevel || 0 }
+        ];
+
+        let buffSlotX = cw - 210;
+        buffs.forEach(b => {
+            if (b.level <= 0) return;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.fillRect(buffSlotX, 140, 28, 28);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(buffSlotX, 140, 28, 28);
+            const btex = hudWeaponTextures[b.id];
+            if (btex && (btex.complete || btex.width)) {
+                ctx.drawImage(btex, buffSlotX + 1, 141, 26, 26);
+            }
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 8px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(toRoman(b.level), buffSlotX + 14, 178);
+            buffSlotX += 34;
+        });
 
         // 4. Milestone Wave Warning Banner
         const noticeTimer = spawner ? (spawner.milestoneNoticeTimer || spawner.waveNoticeTimer || 0) : 0;
