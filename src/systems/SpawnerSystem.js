@@ -93,7 +93,7 @@ export class SpawnerSystem {
         this.enemiesKilledInWave++;
         const spec = this.getWaveSpec(this.currentWave);
 
-        if (spec.isBoss && this.enemies.length <= 1) {
+        if (spec.isBoss && this.enemies.filter(e => !e.dead).length === 0) {
             this.advanceWave();
         } else if (this.enemiesKilledInWave >= spec.totalWaveEnemies) {
             this.advanceWave();
@@ -109,6 +109,13 @@ export class SpawnerSystem {
         // Advance wave on timer expire or total kills reached
         if (this.waveTimer >= this.waveDuration && !spec.isBoss) {
             this.advanceWave();
+        }
+
+        // Immediately spawn boss on wave start (don't wait for spawnInterval)
+        if (spec.isBoss && this.totalSpawnedInWave === 0 && this.enemies.filter(e => !e.dead).length === 0) {
+            const type = spec.types[0];
+            this.spawnEnemyNearPlayer(playerX, playerY, type);
+            this.totalSpawnedInWave++;
         }
 
         // Spawn Enemies near player

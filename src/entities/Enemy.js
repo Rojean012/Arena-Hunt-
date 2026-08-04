@@ -157,6 +157,7 @@ export class Enemy extends Entity {
                 }
                 const angle = Math.atan2(dy, dx);
                 projectiles.push({
+                    type: 'goblinArrow',
                     x: this.x,
                     y: this.y,
                     vx: Math.cos(angle) * 4.8,
@@ -363,15 +364,11 @@ export class Enemy extends Entity {
         ctx.save();
         ctx.translate(screenX, screenY + bobY);
 
-        if (this.type === 'snake') {
-            ctx.rotate(this.angle + Math.PI / 2);
+        // Note: Goblin orientation normalized directly in /assets/images/enemies/goblin.png!
+        if (this.facingRight) {
+            ctx.scale(-1, 1);
         } else {
-            // Note: Goblin orientation normalized directly in /assets/images/enemies/goblin.png!
-            if (this.facingRight) {
-                ctx.scale(-1, 1);
-            } else {
-                ctx.scale(1, 1);
-            }
+            ctx.scale(1, 1);
         }
 
         ctx.scale(squishX, squishY);
