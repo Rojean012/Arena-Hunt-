@@ -310,27 +310,35 @@ export class WeaponManager {
         const px = camera.getScreenX(player.x, canvasWidth);
         const py = camera.getScreenY(player.y, canvasHeight);
 
-        // 1. Ultra-Thin Flame Ring with Sweeping Trailing Fade Loop
+        // 1. Ultra-Thin Sweeping Flame Ring - comet tail arc effect
         if (this.weapons['flameAura']) {
             const w = this.weapons['flameAura'];
-            const auraImg = weaponImages['flameAura'];
             const radius = w.config.radius;
-            const dSize = radius * 1.4;
-
-            const sweepAlpha = Math.max(0.1, (Math.sin(this.flameRotationAngle * 3.0) * 0.45 + 0.55));
+            const angle = this.flameRotationAngle;
 
             ctx.save();
             ctx.translate(px, py);
-            ctx.rotate(this.flameRotationAngle);
-            ctx.globalAlpha = sweepAlpha;
 
-            if (auraImg && (auraImg.complete || auraImg.width)) {
-                ctx.drawImage(auraImg, -dSize / 2, -dSize / 2, dSize, dSize);
-            } else {
-                ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
-                ctx.lineWidth = 2;
+            // Draw arc sweep in 24 segments: head is bright, tail fades to transparent
+            const segments = 24;
+            for (let i = 0; i < segments; i++) {
+                const t = i / segments; // 0=head, 1=tail
+                const segStart = angle + t * Math.PI * 2;
+                const segEnd = segStart + (Math.PI * 2) / segments + 0.02;
+
+                // Head (t=0) = bright orange-yellow, tail (t=1) = fades to nothing
+                const alpha = Math.max(0, 1 - t * 1.15);
+                const r = Math.floor(239 + (251 - 239) * (1 - t));
+                const g2 = Math.floor(68 + (191 - 68) * (1 - t));
+                const b = Math.floor(68 + (36 - 68) * (1 - t));
+
+                ctx.strokeStyle = `rgba(${r}, ${g2}, ${b}, ${alpha})`;
+                ctx.lineWidth = 5 + (1 - t) * 4; // thicker at head
+                ctx.shadowColor = `rgba(249, 115, 22, ${alpha * 0.8})`;
+                ctx.shadowBlur = 14;
+                ctx.lineCap = 'round';
                 ctx.beginPath();
-                ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                ctx.arc(0, 0, radius, segStart, segEnd);
                 ctx.stroke();
             }
 
